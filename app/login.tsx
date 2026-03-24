@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -16,50 +17,74 @@ export default function LoginScreen() {
   const [selectedRole, setSelectedRole] = useState("Patient");
   const [secure, setSecure] = useState(true);
 
+  const roles = [
+    { name: "Patient", icon: "person-outline" },
+    { name: "Hospital", icon: "medkit-outline" },
+    { name: "Municipal", icon: "business-outline" },
+  ];
+
+  const roleDescriptions: any = {
+    Patient: "Access healthcare services and report symptoms",
+    Hospital: "Manage patients, reports and appointments",
+    Municipal: "Monitor city-wide health trends",
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Top Blue Section */}
+      {/* HEADER */}
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Ionicons name="shield-checkmark-outline" size={32} color="#fff" />
         </View>
 
         <Text style={styles.title}>Urban Health Intelligence System</Text>
-
         <Text style={styles.subtitle}>
           AI-Assisted, Insurance-Aware Healthcare
         </Text>
       </View>
 
-      {/* White Card */}
-      <View style={styles.card}>
+      {/* CARD */}
+      <ScrollView
+        style={styles.card}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* ROLE SELECTOR */}
         <Text style={styles.label}>Select Role</Text>
 
         <View style={styles.roleContainer}>
-          {["Patient", "Hospital", "Municipal"].map((role) => (
+          {roles.map((item) => (
             <TouchableOpacity
-              key={role}
+              key={item.name}
               style={[
-                styles.roleButton,
-                selectedRole === role && styles.activeRole,
+                styles.roleItem,
+                selectedRole === item.name && styles.activeRoleItem,
               ]}
-              onPress={() => setSelectedRole(role)}
+              onPress={() => setSelectedRole(item.name)}
             >
+              <Ionicons
+                name={item.icon as any}
+                size={18}
+                color={selectedRole === item.name ? "#fff" : "#6b7280"}
+              />
               <Text
                 style={[
                   styles.roleText,
-                  selectedRole === role && styles.activeRoleText,
+                  selectedRole === item.name && styles.activeRoleText,
                 ]}
               >
-                {role}
+                {item.name}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Email */}
+        {/* DESCRIPTION */}
+        <Text style={styles.roleDesc}>{roleDescriptions[selectedRole]}</Text>
+
+        {/* EMAIL */}
         <Text style={styles.label}>Email / Mobile Number</Text>
         <TextInput
           placeholder="Enter email or mobile"
@@ -67,7 +92,7 @@ export default function LoginScreen() {
           style={styles.input}
         />
 
-        {/* Password */}
+        {/* PASSWORD */}
         <Text style={styles.label}>Password</Text>
         <View style={styles.passwordContainer}>
           <TextInput
@@ -85,48 +110,47 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-   <TouchableOpacity
-  style={{ alignSelf: "flex-end" }}
-  onPress={() => router.push("/forgot-password")}
->
-  <Text style={styles.forgot}>Forgot Password?</Text>
-</TouchableOpacity>
-
-        {/* Login Button */}
+        {/* FORGOT */}
         <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={() => router.replace("/(tabs)/dashboard")}
+          style={{ alignSelf: "flex-end" }}
+          onPress={() => router.push("/forgot-password")}
         >
-          <Text style={styles.loginText}>Login</Text>
+          <Text style={styles.forgot}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            marginTop: 15,
+        {/* LOGIN BUTTON */}
+        <TouchableOpacity
+          style={styles.loginBtn}
+          onPress={() => {
+            if (selectedRole === "Patient") {
+              router.replace("/(tabs)/dashboard");
+            } else if (selectedRole === "Hospital") {
+              router.replace("/(tabs)/hospital");
+            } else {
+              router.replace("/(tabs)/municipal");
+            }
           }}
         >
-          <Text style={styles.signupText}>Don't have an account? </Text>
+          <Text style={styles.loginText}>Login as {selectedRole}</Text>
+        </TouchableOpacity>
 
+        {/* SIGNUP */}
+        <View style={styles.signupRow}>
+          <Text style={styles.signupText}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.replace("/create-account")}>
-            <Text style={{ color: "#1E88E5", fontWeight: "600" }}>
-              Create Account
-            </Text>
+            <Text style={styles.createText}>Create Account</Text>
           </TouchableOpacity>
         </View>
+
         <Text style={styles.footer}>
           Powered by AI • Government of India Initiative
         </Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0E2A4E",
-  },
+  container: { flex: 1, backgroundColor: "#0E2A4E" },
 
   topSection: {
     alignItems: "center",
@@ -145,56 +169,62 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
-    paddingHorizontal: 30,
   },
 
   subtitle: {
     color: "#cbd5e1",
-    fontSize: 14,
     marginTop: 8,
   },
 
   card: {
     flex: 1,
-    backgroundColor: "#F2F4F7",
+    backgroundColor: "#F3F4F6",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 20,
   },
 
   label: {
-    fontSize: 14,
     fontWeight: "600",
     marginTop: 15,
     marginBottom: 8,
-    color: "#1f2937",
   },
 
   roleContainer: {
     flexDirection: "row",
     backgroundColor: "#e5e7eb",
-    borderRadius: 15,
+    borderRadius: 16,
     padding: 5,
   },
 
-  roleButton: {
+  roleItem: {
     flex: 1,
     padding: 10,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,
+    gap: 5,
   },
 
-  activeRole: {
+  activeRoleItem: {
     backgroundColor: "#0E2A4E",
   },
 
   roleText: {
     color: "#6b7280",
-    fontWeight: "600",
+    marginLeft: 5,
   },
 
   activeRoleText: {
     color: "#fff",
+    fontWeight: "600",
+  },
+
+  roleDesc: {
+    textAlign: "center",
+    color: "#6b7280",
+    marginTop: 10,
   },
 
   input: {
@@ -234,9 +264,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  signupRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 15,
+  },
+
   signupText: {
-    textAlign: "center",
-    marginTop: 20,
     color: "#374151",
   },
 
