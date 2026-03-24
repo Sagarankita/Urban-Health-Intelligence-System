@@ -53,19 +53,22 @@ export default function Dashboard() {
           onPress={() => router.push("/dashboard/report")}
         />
         <ActionCard
-          icon="business-outline"
-          title="Find Hospital"
-          subtitle="Insurance-aware"
+          icon="medkit-outline"
+          title="Find Hospitals"
+          subtitle="Nearby hospitals"
+          onPress={() => router.push("/dashboard/find-hospital")}
         />
         <ActionCard
           icon="calendar-outline"
           title="My Appointments"
           subtitle="View & manage"
+          onPress={() => router.push("/dashboard/appointment")}
         />
         <ActionCard
           icon="pulse-outline"
           title="Health Timeline"
           subtitle="Track progress"
+          onPress={() => router.push("/dashboard/health-timeline")}
         />
       </View>
 

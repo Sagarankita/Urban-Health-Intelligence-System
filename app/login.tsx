@@ -1,15 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -26,9 +26,7 @@ export default function LoginScreen() {
           <Ionicons name="shield-checkmark-outline" size={32} color="#fff" />
         </View>
 
-        <Text style={styles.title}>
-          Urban Health Intelligence System
-        </Text>
+        <Text style={styles.title}>Urban Health Intelligence System</Text>
 
         <Text style={styles.subtitle}>
           AI-Assisted, Insurance-Aware Healthcare
@@ -87,9 +85,12 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={{ alignSelf: "flex-end" }}>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </TouchableOpacity>
+   <TouchableOpacity
+  style={{ alignSelf: "flex-end" }}
+  onPress={() => router.push("/forgot-password")}
+>
+  <Text style={styles.forgot}>Forgot Password?</Text>
+</TouchableOpacity>
 
         {/* Login Button */}
         <TouchableOpacity
@@ -99,11 +100,21 @@ export default function LoginScreen() {
           <Text style={styles.loginText}>Login</Text>
         </TouchableOpacity>
 
-        <Text style={styles.signupText}>
-          Don't have an account?{" "}
-          <Text style={styles.createText}>Create Account</Text>
-        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: 15,
+          }}
+        >
+          <Text style={styles.signupText}>Don't have an account? </Text>
 
+          <TouchableOpacity onPress={() => router.replace("/create-account")}>
+            <Text style={{ color: "#1E88E5", fontWeight: "600" }}>
+              Create Account
+            </Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.footer}>
           Powered by AI • Government of India Initiative
         </Text>

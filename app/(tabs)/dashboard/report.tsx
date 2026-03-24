@@ -3,11 +3,11 @@ import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ReportSymptoms() {
@@ -45,7 +45,7 @@ export default function ReportSymptoms() {
       {/* HEADER */}
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.replace("/dashboard")}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
 
