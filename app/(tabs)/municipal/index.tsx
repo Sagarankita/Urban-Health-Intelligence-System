@@ -14,15 +14,19 @@ export default function MunicipalDashboard() {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View style={styles.iconBox}>
-            <Ionicons name="shield-outline" size={26} color="#fff" />
+          {/* LEFT SIDE */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={styles.iconBox}>
+              <Ionicons name="shield-outline" size={26} color="#fff" />
+            </View>
+
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.title}>Municipal Dashboard</Text>
+              <Text style={styles.subtitle}>Pune City Health Monitor</Text>
+            </View>
           </View>
 
-          <View>
-            <Text style={styles.title}>Municipal Dashboard</Text>
-            <Text style={styles.subtitle}>Pune City Health Monitor</Text>
-          </View>
-
+          {/* RIGHT SIDE */}
           <TouchableOpacity
             style={styles.logout}
             onPress={() => router.replace("/login")}
@@ -36,84 +40,84 @@ export default function MunicipalDashboard() {
           <Text style={styles.name}>Dr. Rajesh Patil</Text>
           <Text style={styles.role}>Municipal Health Officer</Text>
         </View>
-      </View>
 
-      {/* OVERVIEW */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>City Health Overview</Text>
+        {/* OVERVIEW */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>City Health Overview</Text>
 
-        <View style={styles.grid}>
-          <StatBox
-            title="Reports Today"
-            value="247"
-            color="#3B82F6"
-            sub="+12% vs yesterday"
-          />
-          <StatBox
-            title="High Risk"
-            value="23"
-            color="#EF4444"
-            sub="Requires attention"
-          />
-          <StatBox
-            title="Available Beds"
-            value="342"
-            color="#22C55E"
-            sub="Across 12 hospitals"
-          />
-          <StatBox
-            title="ICU Available"
-            value="48"
-            color="#F97316"
-            sub="62% capacity"
-          />
+          <View style={styles.grid}>
+            <StatBox
+              title="Reports Today"
+              value="247"
+              color="#3B82F6"
+              sub="+12% vs yesterday"
+            />
+            <StatBox
+              title="High Risk"
+              value="23"
+              color="#EF4444"
+              sub="Requires attention"
+            />
+            <StatBox
+              title="Available Beds"
+              value="342"
+              color="#22C55E"
+              sub="Across 12 hospitals"
+            />
+            <StatBox
+              title="ICU Available"
+              value="48"
+              color="#F97316"
+              sub="62% capacity"
+            />
+          </View>
         </View>
-      </View>
 
-      {/* TOP SYMPTOMS */}
-      <View style={styles.symptomCard}>
-        <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
+        {/* TOP SYMPTOMS */}
+        <View style={styles.symptomCard}>
+          <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
 
-        <SymptomRow name="Fever" value={78} />
-        <SymptomRow name="Cough" value={65} />
-        <SymptomRow name="Headache" value={52} />
-      </View>
+          <SymptomRow name="Fever" value={78} />
+          <SymptomRow name="Cough" value={65} />
+          <SymptomRow name="Headache" value={52} />
+        </View>
 
-      {/* TOOLS */}
-      <Text style={styles.sectionTitle2}>Monitoring Tools</Text>
+        {/* TOOLS */}
+        <Text style={styles.sectionTitle2}>Monitoring Tools</Text>
 
-      <ActionCard
-        icon="map-outline"
-        title="Ward Symptom Heatmap"
-        subtitle="Symptom density by ward"
-        onPress={() => router.push("/municipal/heatmap")}
-      />
-      <ActionCard
-        icon="warning-outline"
-        title="Outbreak Detection"
-        subtitle="Unusual symptom clusters"
-        badge="3 Alerts"
-        onPress={() => router.push("/(tabs)/municipal/outbreak")}
-      />
-      <ActionCard
-        icon="medkit-outline"
-        title="Hospital Capacity Monitor"
-        subtitle="Real-time bed availability"
-        onPress={() => router.push("/(tabs)/municipal/capacity")}
-      />
-      <ActionCard
-        icon="notifications-outline"
-        title="Public Health Advisory"
-        subtitle="Send alerts to citizens"
-        onPress={() => router.push("/(tabs)/municipal/advisory")}
-      />
+        <ActionCard
+          icon="map-outline"
+          title="Ward Symptom Heatmap"
+          subtitle="Symptom density by ward"
+          onPress={() => router.push("/municipal/heatmap")}
+        />
+        <ActionCard
+          icon="warning-outline"
+          title="Outbreak Detection"
+          subtitle="Unusual symptom clusters"
+          badge="3 Alerts"
+          onPress={() => router.push("/(tabs)/municipal/outbreak")}
+        />
+        <ActionCard
+          icon="medkit-outline"
+          title="Hospital Capacity Monitor"
+          subtitle="Real-time bed availability"
+          onPress={() => router.push("/(tabs)/municipal/capacity")}
+        />
+        <ActionCard
+          icon="notifications-outline"
+          title="Public Health Advisory"
+          subtitle="Send alerts to citizens"
+          onPress={() => router.push("/(tabs)/municipal/advisory")}
+        />
 
-      {/* INFO BOX */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
-          Real-time Monitoring: All data is updated automatically from hospitals
-          and patient reports across Pune city.
-        </Text>
+        {/* INFO BOX */}
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            Real-time Monitoring: All data is updated automatically from
+            hospitals and patient reports across Pune city.
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -182,7 +186,11 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 20, fontWeight: "bold" },
   subtitle: { color: "#cbd5e1" },
 
-  logout: { marginLeft: "auto" },
+  logout: {
+    backgroundColor: "#1E3A8A",
+    padding: 10,
+    borderRadius: 10,
+  },
 
   userCard: {
     backgroundColor: "#1f3b66",
