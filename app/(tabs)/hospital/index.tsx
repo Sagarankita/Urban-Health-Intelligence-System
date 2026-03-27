@@ -16,15 +16,23 @@ export default function HospitalDashboard() {
     <ScrollView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.iconBox}>
-            <Ionicons name="medkit-outline" size={26} color="#fff" />
+        <View style={[styles.headerTop, { justifyContent: "space-between" }]}>
+          {/* LEFT SIDE */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={styles.iconBox}>
+              <Ionicons name="medkit-outline" size={26} color="#fff" />
+            </View>
+
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.title}>Hospital Portal</Text>
+              <Text style={styles.subtitle}>City General Hospital</Text>
+            </View>
           </View>
 
-          <View>
-            <Text style={styles.title}>Hospital Portal</Text>
-            <Text style={styles.subtitle}>City General Hospital</Text>
-          </View>
+          {/* RIGHT SIDE LOGOUT */}
+          <TouchableOpacity onPress={() => router.replace("/login")}>
+            <Ionicons name="log-out-outline" size={22} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.userCard}>
@@ -208,6 +216,15 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 16,
     borderRadius: 12,
+  },
+
+  logout: {
+    position: "absolute",
+    right: 20,
+    top: 50,
+    backgroundColor: "#1E3A8A",
+    padding: 10,
+    borderRadius: 10,
   },
 
   infoText: { color: "#1E3A8A" },
