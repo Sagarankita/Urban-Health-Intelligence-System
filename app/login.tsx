@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,9 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [selectedRole, setSelectedRole] = useState("Patient");
   const [secure, setSecure] = useState(true);
 
@@ -30,7 +31,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
 
       {/* HEADER */}
@@ -145,7 +146,7 @@ export default function LoginScreen() {
           Powered by AI • Government of India Initiative
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -153,8 +154,8 @@ const styles = StyleSheet.create({
 
   topSection: {
     alignItems: "center",
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 
   logoBox: {

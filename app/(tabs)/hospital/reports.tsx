@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -7,9 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+const router = useRouter();
 export default function ReportsScreen() {
-  const router = useRouter();
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,6 +10,46 @@ import {
 } from "react-native";
 export default function Dashboard() {
   const router = useRouter();
+  const [result, setResult] = React.useState<any>(null);
+  const { risk, recommendation } = useLocalSearchParams();
+  
+  const getRiskStyle = (risk: string) => {
+  switch (risk) {
+    case "Severe":
+      return styles.severeRisk;
+    case "Moderate":
+      return styles.moderateRisk;
+    default:
+      return styles.lowRisk;
+  }
+};
+const getRiskUI = (risk: string) => {
+  switch (risk) {
+    case "Severe":
+      return {
+        bg: "#FEE2E2",
+        iconBg: "#DC2626",
+        textColor: "#DC2626",
+        icon: "warning",
+      };
+    case "Moderate":
+      return {
+        bg: "#FEF3C7",
+        iconBg: "#F59E0B",
+        textColor: "#F59E0B",
+        icon: "alert-circle",
+      };
+    default:
+      return {
+        bg: "#E6F4EA",
+        iconBg: "#16A34A",
+        textColor: "#15803D",
+        icon: "checkmark-circle",
+      };
+  }
+};
+const riskValue = (risk as string) || "Low";
+const riskUI = getRiskUI(riskValue);
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -28,19 +69,24 @@ export default function Dashboard() {
       </View>
 
       {/* RISK CARD */}
-      <View style={styles.riskCard}>
-        <View style={styles.riskIcon}>
-          <Ionicons name="pulse" size={20} color="#fff" />
-        </View>
+      <View style={[styles.riskCard, { backgroundColor: riskUI.bg }]}>
+  <View style={[styles.riskIcon, { backgroundColor: riskUI.iconBg }]}>
+    <Ionicons name={riskUI.icon as any} size={20} color="#fff" />
+  </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.riskTitle}>Current AI Risk Level</Text>
-          <Text style={styles.lowRisk}>Low Risk</Text>
-          <Text style={styles.riskDesc}>
-            No recent symptom reports • You're doing great!
-          </Text>
-        </View>
-      </View>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.riskTitle}>Current AI Risk Level</Text>
+
+    <Text style={[styles.riskValue, { color: riskUI.textColor }]}>
+      {`${riskValue} Risk`}
+    </Text>
+
+    <Text style={styles.riskDesc}>
+      {recommendation ||
+        "No recent symptom reports • You're doing great!"}
+    </Text>
+  </View>
+</View>
 
       {/* QUICK ACTIONS */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -152,7 +198,6 @@ const styles = StyleSheet.create({
   },
 
   riskCard: {
-    backgroundColor: "#E6F4EA",
     marginHorizontal: 20,
     marginTop: 20,
     padding: 18,
@@ -161,6 +206,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 3,
   },
+
+  riskValue: {
+  fontSize: 20,
+  fontWeight: "bold",
+  marginTop: 4,
+},
 
   riskIcon: {
     backgroundColor: "#16A34A",
@@ -176,6 +227,21 @@ const styles = StyleSheet.create({
     color: "#15803D",
     marginTop: 4,
   },
+
+  moderateRisk: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "#F59E0B",
+  marginTop: 4,
+},
+
+severeRisk: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "#DC2626",
+  marginTop: 4,
+},
+
   riskDesc: { fontSize: 13, marginTop: 4 },
 
   sectionTitle: {
