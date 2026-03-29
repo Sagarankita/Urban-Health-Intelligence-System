@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
 import { Tabs, useRouter } from "expo-router";
+import React from "react";
 import { useEffect } from "react";
 
 export default function TabLayout() {
