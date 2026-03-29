@@ -1,10 +1,28 @@
- import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function HeatmapScreen() {
+  const router = useRouter();
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => router.replace("/municipal")}
+      >
+        <Ionicons name="chevron-back" size={24} />
+        <View>
+          <Text style={styles.title}>Hospital Capacity Monitor</Text>
+          <Text style={styles.subtitle}>Real-time bed availability</Text>
+        </View>
+      </TouchableOpacity>
       {/* HEADER */}
       <Text style={styles.title}>Ward Symptom Heatmap</Text>
       <Text style={styles.subtitle}>Symptom density across Pune</Text>
@@ -33,12 +51,48 @@ export default function HeatmapScreen() {
       {/* WARD ANALYSIS */}
       <Text style={styles.sectionTitle2}>Ward-wise Analysis</Text>
 
-      <WardCard name="Ward 1 - Shivajinagar" risk="HIGH" value={85} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 2 - Kothrud" risk="MEDIUM" value={58} trend="Stable trend" color="#F97316" />
-      <WardCard name="Ward 3 - Aundh" risk="HIGH" value={72} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 4 - Baner" risk="LOW" value={35} trend="Decreasing" color="#16A34A" />
-      <WardCard name="Ward 9 - Viman Nagar" risk="HIGH" value={78} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 10 - Wakad" risk="LOW" value={41} trend="Decreasing" color="#16A34A" />
+      <WardCard
+        name="Ward 1 - Shivajinagar"
+        risk="HIGH"
+        value={85}
+        trend="+18% increase"
+        color="#EF4444"
+      />
+      <WardCard
+        name="Ward 2 - Kothrud"
+        risk="MEDIUM"
+        value={58}
+        trend="Stable trend"
+        color="#F97316"
+      />
+      <WardCard
+        name="Ward 3 - Aundh"
+        risk="HIGH"
+        value={72}
+        trend="+18% increase"
+        color="#EF4444"
+      />
+      <WardCard
+        name="Ward 4 - Baner"
+        risk="LOW"
+        value={35}
+        trend="Decreasing"
+        color="#16A34A"
+      />
+      <WardCard
+        name="Ward 9 - Viman Nagar"
+        risk="HIGH"
+        value={78}
+        trend="+18% increase"
+        color="#EF4444"
+      />
+      <WardCard
+        name="Ward 10 - Wakad"
+        risk="LOW"
+        value={41}
+        trend="Decreasing"
+        color="#16A34A"
+      />
 
       {/* LEGEND */}
       <View style={styles.card}>
@@ -53,10 +107,10 @@ export default function HeatmapScreen() {
       <View style={styles.alert}>
         <Ionicons name="alert-circle-outline" size={20} color="#B45309" />
         <Text style={styles.alertText}>
-          Action Required: Ward 1, Ward 3, and Ward 9 show elevated symptom density.
+          Action Required: Ward 1, Ward 3, and Ward 9 show elevated symptom
+          density.
         </Text>
       </View>
-
     </ScrollView>
   );
 }
@@ -85,7 +139,6 @@ function Symptom({ name, value }: any) {
 function WardCard({ name, risk, value, trend, color }: any) {
   return (
     <View style={[styles.wardCard, { borderColor: color }]}>
-      
       <View style={styles.rowBetween}>
         <Text style={styles.wardTitle}>{name}</Text>
 
@@ -102,7 +155,12 @@ function WardCard({ name, risk, value, trend, color }: any) {
       </View>
 
       <View style={styles.barBg}>
-        <View style={[styles.barFill, { width: `${value}%`, backgroundColor: color }]} />
+        <View
+          style={[
+            styles.barFill,
+            { width: `${value}%`, backgroundColor: color },
+          ]}
+        />
       </View>
 
       <Text style={styles.trend}>{trend}</Text>
@@ -212,4 +270,11 @@ const styles = StyleSheet.create({
   },
 
   alertText: { color: "#92400E", flex: 1 },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
 });

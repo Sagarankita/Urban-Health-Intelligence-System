@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function AppointmentScreen() {
@@ -96,7 +97,10 @@ export default function AppointmentScreen() {
       </View>
 
       {/* BUTTONS */}
-      <TouchableOpacity style={styles.primaryBtn}>
+      <TouchableOpacity
+        style={styles.primaryBtn}
+        onPress={() => router.push("/(tabs)/dashboard/health-timeline")}
+      >
         <Text style={styles.primaryText}>View Health Timeline →</Text>
       </TouchableOpacity>
 
