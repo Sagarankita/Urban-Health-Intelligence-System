@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -8,9 +8,96 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import API from "../../../services/api";
+
+interface WardData {
+  ward: string;
+  zone: string;
+  outbreak_prob: number;
+  hotspot_score: number;
+  wow_growth_pct: number | null;
+  growth_48h_pct: number | null;
+  syndrome: string;
+  actual: number;
+  hospital_load_pct: number;
+  advisories: string[];
+}
+
+interface OutbreakData {
+  zone_summary: { [key: string]: string[] };
+  top_hotspots: WardData[];
+  all_wards: WardData[];
+  ward_symptoms: { [ward: string]: string[] };
+  top_symptoms?: { name: string; value: number }[];
+  timestamp: string;
+}
 
 export default function OutbreakScreen() {
   const router = useRouter();
+  const [data, setData] = useState<OutbreakData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchOutbreakData();
+  }, []);
+
+  const fetchOutbreakData = async () => {
+    try {
+      setError(null);
+      const response = await API.get("/api/outbreaks/heatmap");
+      setData(response.data);
+    } catch (error: any) {
+      console.error("Error fetching outbreak data:", error);
+      setError(error.message || "Failed to load outbreak data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Loading outbreak data...</Text>
+      </View>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: "red", marginBottom: 10 }}>Error: {error}</Text>
+        <Text>Using offline data...</Text>
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Failed to load data</Text>
+      </View>
+    );
+  }
+
+  const wards = Array.isArray((data as any)?.all_wards) ? (data as any).all_wards : [];
+  const zoneSummary = (data as any)?.zone_summary || {};
+  const topHotspots = Array.isArray((data as any)?.top_hotspots)
+    ? (data as any).top_hotspots
+    : [];
+
+  const wardSymptomsMap = (data as any)?.ward_symptoms || {};
+
+  // Calculate summary stats (defensive: avoids crashes on unexpected API shape)
+  const totalAlerts = wards.filter(
+    (w: any) => w?.zone === "RED" || w?.zone === "YELLOW"
+  ).length;
+  const criticalAlerts = zoneSummary.RED?.length || 0;
+  const affectedCases = wards.reduce(
+    (sum: number, ward: any) => sum + (ward?.actual || 0),
+    0
+  );
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -30,55 +117,38 @@ export default function OutbreakScreen() {
         <Text style={styles.alertTitle}>⚠ Active Alerts</Text>
 
         <View style={styles.alertRow}>
-          <Summary number="4" label="Total Alerts" />
-          <Summary number="2" label="Critical" />
-          <Summary number="136" label="Affected Cases" />
+          <Summary number={totalAlerts.toString()} label="Total Alerts" />
+          <Summary number={criticalAlerts.toString()} label="Critical" />
+          <Summary number={affectedCases.toString()} label="Affected Cases" />
         </View>
       </View>
 
       {/* CARDS */}
-      <OutbreakCard
-        title="Flu-like Symptoms Cluster"
-        ward="Ward 1 - Shivajinagar"
-        cases="42"
-        growth="+35% in 48 hours"
-        level="CRITICAL"
-        symptoms={["Fever", "Cough", "Body Ache"]}
-      />
-
-      <OutbreakCard
-        title="Respiratory Issues Surge"
-        ward="Ward 9 - Viman Nagar"
-        cases="38"
-        growth="+28% in 24 hours"
-        level="HIGH"
-        symptoms={["Cough", "Shortness of Breath"]}
-      />
-
-      <OutbreakCard
-        title="Gastrointestinal Symptoms"
-        ward="Ward 3 - Aundh"
-        cases="25"
-        growth="+18% in 36 hours"
-        level="MEDIUM"
-        symptoms={["Nausea", "Vomiting", "Diarrhea"]}
-      />
-
-      <OutbreakCard
-        title="Dengue-like Symptoms"
-        ward="Ward 5 - Pimpri"
-        cases="31"
-        growth="+22% in 24 hours"
-        level="HIGH"
-        symptoms={["High Fever", "Joint Pain", "Rash"]}
-      />
+      {topHotspots.slice(0, 4).map((ward: any, index: number) => (
+        <OutbreakCard
+          key={index}
+          title={`${(ward?.syndrome || "").charAt(0).toUpperCase() + (ward?.syndrome || "").slice(1)} Symptoms Cluster`}
+          ward={ward.ward}
+          cases={(ward?.actual ?? 0).toString()}
+          growth={
+            ward?.growth_48h_pct
+              ? `${ward.growth_48h_pct > 0 ? "+" : ""}${ward.growth_48h_pct.toFixed(1)}% in 48 hours`
+              : "Stable"
+          }
+          level={
+            ward?.zone === "RED" ? "CRITICAL" : ward?.zone === "YELLOW" ? "HIGH" : "MEDIUM"
+          }
+          symptoms={wardSymptomsMap[ward.ward] || []}
+        />
+      ))}
 
       {/* AI INFO */}
       <View style={styles.infoBox}>
         <Text style={styles.infoTitle}>AI Detection System</Text>
         <Text style={styles.infoText}>
           Our system analyzes symptom patterns, geographic clustering, and
-          trends to detect outbreaks in real-time.
+          trends to detect outbreaks in real-time using exponential smoothing
+          and z-score anomaly detection.
         </Text>
       </View>
 
@@ -86,10 +156,10 @@ export default function OutbreakScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Recommended Actions</Text>
 
-        <Action text="Deploy field investigation teams" />
-        <Action text="Coordinate with hospitals for resources" />
-        <Action text="Issue public advisories" />
-        <Action text="Arrange testing camps" />
+        {topHotspots.length > 0 &&
+          (topHotspots[0]?.advisories || []).slice(0, 3).map((action: string, index: number) => (
+          <Action key={index} text={action} />
+          ))}
       </View>
     </ScrollView>
   );
