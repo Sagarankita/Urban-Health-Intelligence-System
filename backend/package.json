@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "db:migrate": "node src/init-db.js --migrate-only",
+    "db:seed": "node src/init-db.js --seed-only",
+    "db:init": "node src/init-db.js"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +19,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "node-pg-migrate": "^8.0.4",
     "pg": "^8.20.0"
   },
   "devDependencies": {

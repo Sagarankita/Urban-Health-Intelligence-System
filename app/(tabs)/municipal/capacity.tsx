@@ -1,3 +1,4 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -8,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+API.get("/api/resources/municipal")
 
 export default function CapacityScreen() {
   const router = useRouter();
