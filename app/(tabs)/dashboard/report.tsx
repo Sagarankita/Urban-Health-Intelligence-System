@@ -1,4 +1,4 @@
-import API from "../../services/api";
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";

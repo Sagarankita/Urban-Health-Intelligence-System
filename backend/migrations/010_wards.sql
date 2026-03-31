@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS wards (
+  id SERIAL PRIMARY KEY,
+  city_id INTEGER NOT NULL REFERENCES cities(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  UNIQUE (city_id, name)
+);
+
