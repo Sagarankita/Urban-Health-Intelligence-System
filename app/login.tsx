@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,11 +12,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../services/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { login } = useAuth();
   const [selectedRole, setSelectedRole] = useState("Patient");
   const [secure, setSecure] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const roles = [
     { name: "Patient", icon: "person-outline" },
@@ -29,20 +37,42 @@ export default function LoginScreen() {
     Municipal: "Monitor city-wide health trends",
   };
 
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Missing Fields", "Please enter email and password");
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(email.trim(), password, selectedRole);
+    setLoading(false);
+
+    if (result.success) {
+      if (selectedRole === "Patient") {
+        router.replace("/(tabs)/dashboard");
+      } else if (selectedRole === "Hospital") {
+        router.replace("/(tabs)/hospital");
+      } else {
+        router.replace("/(tabs)/municipal");
+      }
+    } else {
+      Alert.alert("Login Failed", result.error || "Invalid credentials");
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
 
       {/* HEADER */}
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Ionicons name="shield-checkmark-outline" size={32} color="#fff" />
+          <Text style={styles.title}>Urban Health Intelligence System</Text>
+          <Text style={styles.subtitle}>
+            AI-Assisted, Insurance-Aware Healthcare
+          </Text>
         </View>
-
-        <Text style={styles.title}>Urban Health Intelligence System</Text>
-        <Text style={styles.subtitle}>
-          AI-Assisted, Insurance-Aware Healthcare
-        </Text>
       </View>
 
       {/* CARD */}
@@ -90,6 +120,10 @@ export default function LoginScreen() {
           placeholder="Enter email or mobile"
           placeholderTextColor="#999"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
 
         {/* PASSWORD */}
@@ -100,6 +134,8 @@ export default function LoginScreen() {
             placeholderTextColor="#999"
             secureTextEntry={secure}
             style={{ flex: 1 }}
+            value={password}
+            onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setSecure(!secure)}>
             <Ionicons
@@ -120,18 +156,15 @@ export default function LoginScreen() {
 
         {/* LOGIN BUTTON */}
         <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={() => {
-            if (selectedRole === "Patient") {
-              router.replace("/(tabs)/dashboard");
-            } else if (selectedRole === "Hospital") {
-              router.replace("/(tabs)/hospital");
-            } else {
-              router.replace("/(tabs)/municipal");
-            }
-          }}
+          style={[styles.loginBtn, loading && { opacity: 0.7 }]}
+          onPress={handleLogin}
+          disabled={loading}
         >
-          <Text style={styles.loginText}>Login as {selectedRole}</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginText}>Login as {selectedRole}</Text>
+          )}
         </TouchableOpacity>
 
         {/* SIGNUP */}
@@ -146,7 +179,7 @@ export default function LoginScreen() {
           Powered by AI • Government of India Initiative
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -154,34 +187,39 @@ const styles = StyleSheet.create({
 
   topSection: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 
   logoBox: {
-    backgroundColor: "#1E88E5",
-    padding: 15,
-    borderRadius: 16,
+    backgroundColor: "#061938",
+    padding: 18,
+    borderRadius: 20,
     marginBottom: 15,
+    alignItems: "center",
   },
 
   title: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
+    marginTop: 12,
   },
 
   subtitle: {
     color: "#cbd5e1",
-    marginTop: 8,
+    marginTop: 6,
+    textAlign: "center",
   },
 
   card: {
     flex: 1,
     backgroundColor: "#F3F4F6",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
     padding: 20,
+    marginTop: 10,
   },
 
   label: {
@@ -189,26 +227,28 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginBottom: 8,
   },
-
   roleContainer: {
     flexDirection: "row",
-    backgroundColor: "#e5e7eb",
-    borderRadius: 16,
-    padding: 5,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 20,
+    padding: 6,
   },
 
   roleItem: {
     flex: 1,
-    padding: 10,
+    paddingVertical: 12,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 12,
-    gap: 5,
+    borderRadius: 14,
   },
 
   activeRoleItem: {
     backgroundColor: "#0E2A4E",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   roleText: {
@@ -229,10 +269,11 @@ const styles = StyleSheet.create({
 
   input: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    marginTop: 5,
   },
 
   passwordContainer: {
@@ -252,10 +293,10 @@ const styles = StyleSheet.create({
 
   loginBtn: {
     backgroundColor: "#0E2A4E",
-    padding: 16,
-    borderRadius: 14,
+    padding: 18,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 25,
   },
 
   loginText: {
@@ -275,7 +316,7 @@ const styles = StyleSheet.create({
   },
 
   createText: {
-    color: "#1E88E5",
+    color: "#374151",
     fontWeight: "600",
   },
 

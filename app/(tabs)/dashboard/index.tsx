@@ -1,22 +1,150 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React, { useCallback } from "react";
 import {
+  FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import API from "../../../services/api";
+import { useAuth } from "../../../services/AuthContext";
+
+type City = { id: number; state: string; name: string };
+type Ward = { id: number; city_id: number; name: string };
 export default function Dashboard() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [result, setResult] = React.useState<any>(null);
+  const [riskData, setRiskData] = React.useState<{ risk: string | null; recommendation: string | null }>({ risk: null, recommendation: null });
+  const [advisories, setAdvisories] = React.useState<any[]>([]);
+  const [advisoryError, setAdvisoryError] = React.useState<string | null>(null);
+
+  const [cities, setCities] = React.useState<City[]>([]);
+  const [wards, setWards] = React.useState<Ward[]>([]);
+  const [selectedCity, setSelectedCity] = React.useState<City | null>(null);
+  const [selectedWard, setSelectedWard] = React.useState<Ward | null>(null); // null => all wards in city
+  const [pickerOpen, setPickerOpen] = React.useState<null | "CITY" | "WARD">(null);
+
+  const locationLabel = selectedWard?.name
+    ? `${selectedWard.name}, ${selectedCity?.name || ""}`.trim()
+    : selectedCity?.name
+      ? `All wards, ${selectedCity.name}`
+      : "Select City";
+
+  // Fetch latest risk from DB on mount (persistent risk)
+  React.useEffect(() => {
+    const fetchLatestRisk = async () => {
+      try {
+        const patientName = user?.name || "";
+        const resp = await API.get("/api/latest", { params: { patient_name: patientName } });
+        if (resp.data?.risk) {
+          setRiskData({ risk: resp.data.risk, recommendation: resp.data.recommendation });
+        }
+      } catch (e) {
+        console.error("Failed to load latest risk", e);
+      }
+    };
+    fetchLatestRisk();
+  }, [user?.name]);
+
+  React.useEffect(() => {
+    const loadCities = async () => {
+      try {
+        const resp = await API.get("/api/geo/cities", { params: { state: "Maharashtra" } });
+        const list = Array.isArray(resp.data) ? resp.data : [];
+        setCities(list);
+        // Default to Pune if present, else first city.
+        const pune = list.find((c: any) => c.name === "Pune") || list[0] || null;
+        setSelectedCity(pune);
+      } catch (e) {
+        console.error("Failed to load cities", e);
+      }
+    };
+    loadCities();
+  }, []);
+
+  React.useEffect(() => {
+    const loadWards = async () => {
+      if (!selectedCity?.id) return;
+      try {
+        const resp = await API.get(`/api/geo/cities/${selectedCity.id}/wards`);
+        const list = Array.isArray(resp.data) ? resp.data : [];
+        setWards(list);
+        // Default to user's ward if present
+        const userWard = user?.ward ? list.find((w: any) => w.name === user.ward) : null;
+        const w23 = userWard || list.find((w: any) => w.name === "Ward 23") || null;
+        setSelectedWard(w23); // if null => all wards
+      } catch (e) {
+        console.error("Failed to load wards", e);
+        setWards([]);
+        setSelectedWard(null);
+      }
+    };
+    loadWards();
+  }, [selectedCity?.id]);
+
+  React.useEffect(() => {
+    const loadAdvisories = async () => {
+      if (!selectedCity?.id) return;
+      try {
+        setAdvisoryError(null);
+        const params: any = { limit: 5 };
+        if (selectedWard?.id) params.ward_id = selectedWard.id;
+        else params.city_id = selectedCity.id; // all wards in city
+
+        const resp = await API.get("/api/advisories", { params });
+        setAdvisories(Array.isArray(resp.data) ? resp.data : []);
+      } catch (e: any) {
+        console.error("Failed to load advisories", e);
+        setAdvisoryError(e?.message || "Failed to load advisories");
+        setAdvisories([]);
+      }
+    };
+    loadAdvisories();
+  }, [selectedCity?.id, selectedWard?.id]);
+  
+  const getRiskUI = (risk: string) => {
+  switch (risk) {
+    case "Severe":
+      return {
+        bg: "#FEE2E2",
+        iconBg: "#DC2626",
+        textColor: "#DC2626",
+        icon: "warning",
+      };
+    case "Moderate":
+      return {
+        bg: "#FEF3C7",
+        iconBg: "#F59E0B",
+        textColor: "#F59E0B",
+        icon: "alert-circle",
+      };
+    default:
+      return {
+        bg: "#E6F4EA",
+        iconBg: "#16A34A",
+        textColor: "#15803D",
+        icon: "checkmark-circle",
+      };
+  }
+};
+const riskValue = riskData.risk || "Low";
+const riskUI = getRiskUI(riskValue);
+const userName = user?.name || "User";
+const userInsurance = user?.insurance || "N/A";
+const userAbha = user?.abha || "N/A";
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcome}>Welcome back,</Text>
-          <Text style={styles.name}>Priya Sharma</Text>
-          <Text style={styles.location}>Ward 23, Pune</Text>
+          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.location}>{locationLabel}</Text>
         </View>
 
         <TouchableOpacity
@@ -28,19 +156,24 @@ export default function Dashboard() {
       </View>
 
       {/* RISK CARD */}
-      <View style={styles.riskCard}>
-        <View style={styles.riskIcon}>
-          <Ionicons name="pulse" size={20} color="#fff" />
-        </View>
+      <View style={[styles.riskCard, { backgroundColor: riskUI.bg }]}>
+  <View style={[styles.riskIcon, { backgroundColor: riskUI.iconBg }]}>
+    <Ionicons name={riskUI.icon as any} size={20} color="#fff" />
+  </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.riskTitle}>Current AI Risk Level</Text>
-          <Text style={styles.lowRisk}>Low Risk</Text>
-          <Text style={styles.riskDesc}>
-            No recent symptom reports • You're doing great!
-          </Text>
-        </View>
-      </View>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.riskTitle}>Current AI Risk Level</Text>
+
+    <Text style={[styles.riskValue, { color: riskUI.textColor }]}>
+      {`${riskValue} Risk`}
+    </Text>
+
+    <Text style={styles.riskDesc}>
+      {riskData.recommendation ||
+        "No recent symptom reports • You're doing great!"}
+    </Text>
+  </View>
+</View>
 
       {/* QUICK ACTIONS */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -75,25 +208,119 @@ export default function Dashboard() {
       {/* ADVISORIES */}
       <Text style={styles.sectionTitle}>Area Health Advisories</Text>
 
-      <View style={styles.alertCard}>
-        <Text style={styles.alertTitle}>Moderate Flu Risk in Your Ward</Text>
-        <Text style={styles.alertDesc}>
-          Increased respiratory infections reported in Ward 23, Pune.
-        </Text>
-
-        <View style={styles.progressBar}>
-          <View style={styles.progressFill} />
+      <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <TouchableOpacity
+            style={[styles.simpleCard, { flex: 1, marginHorizontal: 0 }]}
+            onPress={() => setPickerOpen("CITY")}
+          >
+            <Text style={styles.alertTitle}>
+              {selectedCity?.name ? `City: ${selectedCity.name}` : "Select City"}
+            </Text>
+            <Text style={styles.alertDesc}>Tap to change city</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.simpleCard, { flex: 1, marginHorizontal: 0 }]}
+            onPress={() => setPickerOpen("WARD")}
+            disabled={!selectedCity}
+          >
+            <Text style={styles.alertTitle}>
+              {selectedWard?.name ? `Ward: ${selectedWard.name}` : "Ward: All wards"}
+            </Text>
+            <Text style={styles.alertDesc}>Tap to change ward</Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.riskPercent}>60% Risk</Text>
       </View>
 
-      <View style={styles.simpleCard}>
-        <Text style={styles.alertTitle}>Seasonal Vaccination Drive</Text>
-        <Text style={styles.alertDesc}>
-          Free flu vaccines available at nearby health centers.
-        </Text>
-      </View>
+      {advisoryError ? (
+        <View style={styles.simpleCard}>
+          <Text style={styles.alertTitle}>Unable to load advisories</Text>
+          <Text style={styles.alertDesc}>{advisoryError}</Text>
+        </View>
+      ) : advisories.length === 0 ? (
+        <View style={styles.simpleCard}>
+          <Text style={styles.alertTitle}>No advisories right now</Text>
+          <Text style={styles.alertDesc}>
+            If your municipal authority sends an advisory for your selected area, it will show here.
+          </Text>
+        </View>
+      ) : (
+        advisories.slice(0, 2).map((a, idx) => (
+          <View key={a.id ?? idx} style={styles.simpleCard}>
+            <Text style={styles.alertTitle}>
+              {a.ward_name || a.city_name || a.target_area || "Public Advisory"}
+            </Text>
+            <Text style={styles.alertDesc}>{a.message}</Text>
+          </View>
+        ))
+      )}
+
+      <Modal
+        visible={pickerOpen !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPickerOpen(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.rowBetween}>
+              <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                {pickerOpen === "CITY" ? "Choose City" : "Choose Ward"}
+              </Text>
+              <TouchableOpacity onPress={() => setPickerOpen(null)}>
+                <Ionicons name="close" size={20} />
+              </TouchableOpacity>
+            </View>
+
+            {pickerOpen === "CITY" ? (
+              <FlatList
+                data={cities}
+                keyExtractor={(c) => String(c.id)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.pickItem}
+                    onPress={() => {
+                      setSelectedCity(item);
+                      setSelectedWard(null);
+                      setPickerOpen(null);
+                    }}
+                  >
+                    <Text style={{ fontWeight: selectedCity?.id === item.id ? "bold" : "normal" }}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <FlatList
+                data={[{ id: -1, city_id: selectedCity?.id ?? 0, name: "All wards" } as any, ...wards]}
+                keyExtractor={(w) => String(w.id)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.pickItem}
+                    onPress={() => {
+                      if (item.id === -1) setSelectedWard(null);
+                      else setSelectedWard(item);
+                      setPickerOpen(null);
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight:
+                          (item.id === -1 && !selectedWard) || selectedWard?.id === item.id
+                            ? "bold"
+                            : "normal",
+                      }}
+                    >
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* PROFILE */}
       <TouchableOpacity
@@ -104,7 +331,7 @@ export default function Dashboard() {
 
         <View style={{ marginLeft: 10 }}>
           <Text style={{ fontWeight: "600" }}>Profile Settings</Text>
-          <Text style={{ color: "gray" }}>PM-JAY • ABHA: 1234</Text>
+          <Text style={{ color: "gray" }}>{userInsurance} • ABHA: {userAbha}</Text>
         </View>
       </TouchableOpacity>
     </ScrollView>
@@ -152,7 +379,6 @@ const styles = StyleSheet.create({
   },
 
   riskCard: {
-    backgroundColor: "#E6F4EA",
     marginHorizontal: 20,
     marginTop: 20,
     padding: 18,
@@ -162,6 +388,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  riskValue: {
+  fontSize: 20,
+  fontWeight: "bold",
+  marginTop: 4,
+},
+
   riskIcon: {
     backgroundColor: "#16A34A",
     padding: 12,
@@ -170,12 +402,7 @@ const styles = StyleSheet.create({
   },
 
   riskTitle: { fontSize: 14 },
-  lowRisk: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#15803D",
-    marginTop: 4,
-  },
+
   riskDesc: { fontSize: 13, marginTop: 4 },
 
   sectionTitle: {
@@ -224,14 +451,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  alertCard: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 16,
-    borderRadius: 18,
-    elevation: 2,
-  },
-
   alertTitle: {
     fontWeight: "bold",
     fontSize: 16,
@@ -242,26 +461,6 @@ const styles = StyleSheet.create({
     color: "gray",
   },
 
-  progressBar: {
-    height: 6,
-    backgroundColor: "#eee",
-    borderRadius: 10,
-    marginTop: 12,
-  },
-
-  progressFill: {
-    width: "60%",
-    height: 6,
-    backgroundColor: "orange",
-    borderRadius: 10,
-  },
-
-  riskPercent: {
-    marginTop: 6,
-    fontWeight: "bold",
-    color: "orange",
-  },
-
   simpleCard: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
@@ -269,6 +468,29 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     elevation: 2,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    maxHeight: "70%",
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pickItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
 
   profileCard: {

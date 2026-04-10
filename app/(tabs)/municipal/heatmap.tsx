@@ -1,22 +1,123 @@
- import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import API from "../../../services/api";
+
+interface WardData {
+  ward: string;
+  zone: string;
+  outbreak_prob: number;
+  hotspot_score: number;
+  wow_growth_pct: number | null;
+  growth_48h_pct: number | null;
+  syndrome: string;
+  actual: number;
+}
+
+interface HeatmapData {
+  zone_summary: { [key: string]: string[] };
+  top_hotspots: WardData[];
+  all_wards: WardData[];
+  top_symptoms: { name: string; value: number }[];
+  // Added by `models/untitled10.py`, but heatmap screen only uses `top_symptoms`.
+  ward_symptoms?: { [ward: string]: string[] };
+  timestamp: string;
+}
 
 export default function HeatmapScreen() {
+  const router = useRouter();
+  const [data, setData] = useState<HeatmapData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchHeatmapData();
+  }, []);
+
+  const fetchHeatmapData = async () => {
+    try {
+      setError(null);
+      const response = await API.get("/api/outbreaks/heatmap");
+      setData(response.data);
+    } catch (error: any) {
+      console.error("Error fetching heatmap data:", error);
+      setError(error.message || "Failed to load heatmap data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Loading heatmap data...</Text>
+      </View>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: "red", marginBottom: 10 }}>Error: {error}</Text>
+        <Text>Using offline data...</Text>
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Failed to load data</Text>
+      </View>
+    );
+  }
+  const wards = Array.isArray((data as any)?.all_wards) ? (data as any).all_wards : [];
+  const zoneSummary = (data as any)?.zone_summary || {};
+  const topSymptoms = Array.isArray((data as any)?.top_symptoms) ? (data as any).top_symptoms : [];
+
+  const totalReports = (wards ?? []).reduce(
+    (sum: number, ward: any) => sum + (ward?.actual || 0),
+    0
+  );
+
+  const activeWards = (wards ?? []).length;
+
+  const highRiskCount = zoneSummary.RED?.length || 0;
+
+  
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => router.replace("/municipal")}
+      >
+        <Ionicons name="chevron-back" size={24} />
+        <View>
+          <Text style={styles.title}>Hospital Capacity Monitor</Text>
+          <Text style={styles.subtitle}>Real-time bed availability</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* HEADER */}
       <Text style={styles.title}>Ward Symptom Heatmap</Text>
-      <Text style={styles.subtitle}>Symptom density across Pune</Text>
+      <Text style={styles.subtitle}>AI-detected outbreak zones</Text>
 
       {/* SUMMARY */}
       <View style={styles.summary}>
         <Text style={styles.summaryTitle}>City-Wide Summary</Text>
 
         <View style={styles.summaryRow}>
-          <SummaryItem value="247" label="Total Reports" />
-          <SummaryItem value="10" label="Active Wards" />
-          <SummaryItem value="3" label="High Risk" />
+          <SummaryItem value={totalReports.toString()} label="Total Reports" />
+          <SummaryItem value={activeWards.toString()} label="Active Wards" />
+          <SummaryItem value={highRiskCount.toString()} label="High Risk" />
         </View>
       </View>
 
@@ -24,39 +125,43 @@ export default function HeatmapScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Top Reported Symptoms</Text>
 
-        <Symptom name="Fever" value={78} />
-        <Symptom name="Cough" value={65} />
-        <Symptom name="Headache" value={52} />
-        <Symptom name="Body Ache" value={41} />
+        {topSymptoms.map((symptom: any, index: number) => (
+          <Symptom key={index} name={symptom.name} value={symptom.value} />
+        ))}
       </View>
 
       {/* WARD ANALYSIS */}
       <Text style={styles.sectionTitle2}>Ward-wise Analysis</Text>
 
-      <WardCard name="Ward 1 - Shivajinagar" risk="HIGH" value={85} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 2 - Kothrud" risk="MEDIUM" value={58} trend="Stable trend" color="#F97316" />
-      <WardCard name="Ward 3 - Aundh" risk="HIGH" value={72} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 4 - Baner" risk="LOW" value={35} trend="Decreasing" color="#16A34A" />
-      <WardCard name="Ward 9 - Viman Nagar" risk="HIGH" value={78} trend="+18% increase" color="#EF4444" />
-      <WardCard name="Ward 10 - Wakad" risk="LOW" value={41} trend="Decreasing" color="#16A34A" />
+      {wards.slice(0, 6).map((ward: any, index: number) => (
+        <WardCard
+          key={index}
+          name={ward.ward}
+          risk={ward.zone === "RED" ? "HIGH" : ward.zone === "YELLOW" ? "MEDIUM" : "LOW"}
+          value={Math.round(ward.outbreak_prob)}
+          trend={ward.wow_growth_pct ? `${ward.wow_growth_pct > 0 ? "+" : ""}${ward.wow_growth_pct}% ${ward.wow_growth_pct > 0 ? "increase" : "decrease"}` : "Stable trend"}
+          color={ward.zone === "RED" ? "#EF4444" : ward.zone === "YELLOW" ? "#F97316" : "#16A34A"}
+        />
+      ))}
 
       {/* LEGEND */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Severity Legend</Text>
 
-        <Legend color="#EF4444" text="High Risk (70%+ reports)" />
-        <Legend color="#F97316" text="Medium Risk (40-70%)" />
-        <Legend color="#16A34A" text="Low Risk (<40%)" />
+        <Legend color="#EF4444" text="High Risk (RED Zone - 75%+ outbreak prob)" />
+        <Legend color="#F97316" text="Medium Risk (YELLOW Zone - 55-75%)" />
+        <Legend color="#16A34A" text="Low Risk (GREEN Zone - <55%)" />
       </View>
 
       {/* ALERT */}
-      <View style={styles.alert}>
-        <Ionicons name="alert-circle-outline" size={20} color="#B45309" />
-        <Text style={styles.alertText}>
-          Action Required: Ward 1, Ward 3, and Ward 9 show elevated symptom density.
-        </Text>
-      </View>
-
+      {highRiskCount > 0 && (
+        <View style={styles.alert}>
+          <Ionicons name="alert-circle-outline" size={20} color="#B45309" />
+          <Text style={styles.alertText}>
+            Action Required: {zoneSummary.RED?.join(", ")} show elevated outbreak probability.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -85,7 +190,6 @@ function Symptom({ name, value }: any) {
 function WardCard({ name, risk, value, trend, color }: any) {
   return (
     <View style={[styles.wardCard, { borderColor: color }]}>
-      
       <View style={styles.rowBetween}>
         <Text style={styles.wardTitle}>{name}</Text>
 
@@ -102,7 +206,12 @@ function WardCard({ name, risk, value, trend, color }: any) {
       </View>
 
       <View style={styles.barBg}>
-        <View style={[styles.barFill, { width: `${value}%`, backgroundColor: color }]} />
+        <View
+          style={[
+            styles.barFill,
+            { width: `${value}%`, backgroundColor: color },
+          ]}
+        />
       </View>
 
       <Text style={styles.trend}>{trend}</Text>
@@ -212,4 +321,11 @@ const styles = StyleSheet.create({
   },
 
   alertText: { color: "#92400E", flex: 1 },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
 });
