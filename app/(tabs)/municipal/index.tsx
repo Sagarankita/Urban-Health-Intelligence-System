@@ -1,7 +1,8 @@
 import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,12 +14,15 @@ import {
 
 export default function MunicipalDashboard() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+    }, [])
+  );
 
   const fetchStats = async () => {
     try {
@@ -89,7 +93,10 @@ export default function MunicipalDashboard() {
           {/* RIGHT SIDE */}
           <TouchableOpacity
             style={styles.logout}
-            onPress={() => router.replace("/login")}
+            onPress={async () => {
+              await logout();
+              router.replace("/login");
+            }}
           >
             <Ionicons name="log-out-outline" size={22} color="#fff" />
           </TouchableOpacity>
@@ -97,7 +104,7 @@ export default function MunicipalDashboard() {
 
         <View style={styles.userCard}>
           <Text style={styles.logged}>Logged in as</Text>
-          <Text style={styles.name}>Dr. Rajesh Patil</Text>
+          <Text style={styles.name}>{user?.name || "Health Officer"}</Text>
           <Text style={styles.role}>Municipal Health Officer</Text>
         </View>
 

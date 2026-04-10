@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,12 +13,17 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../services/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { login } = useAuth();
   const [selectedRole, setSelectedRole] = useState("Patient");
   const [secure, setSecure] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const roles = [
     { name: "Patient", icon: "person-outline" },
@@ -28,6 +35,29 @@ export default function LoginScreen() {
     Patient: "Access healthcare services and report symptoms",
     Hospital: "Manage patients, reports and appointments",
     Municipal: "Monitor city-wide health trends",
+  };
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Missing Fields", "Please enter email and password");
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(email.trim(), password, selectedRole);
+    setLoading(false);
+
+    if (result.success) {
+      if (selectedRole === "Patient") {
+        router.replace("/(tabs)/dashboard");
+      } else if (selectedRole === "Hospital") {
+        router.replace("/(tabs)/hospital");
+      } else {
+        router.replace("/(tabs)/municipal");
+      }
+    } else {
+      Alert.alert("Login Failed", result.error || "Invalid credentials");
+    }
   };
 
   return (
@@ -90,6 +120,10 @@ export default function LoginScreen() {
           placeholder="Enter email or mobile"
           placeholderTextColor="#999"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
 
         {/* PASSWORD */}
@@ -100,6 +134,8 @@ export default function LoginScreen() {
             placeholderTextColor="#999"
             secureTextEntry={secure}
             style={{ flex: 1 }}
+            value={password}
+            onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setSecure(!secure)}>
             <Ionicons
@@ -120,18 +156,15 @@ export default function LoginScreen() {
 
         {/* LOGIN BUTTON */}
         <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={() => {
-            if (selectedRole === "Patient") {
-              router.replace("/(tabs)/dashboard");
-            } else if (selectedRole === "Hospital") {
-              router.replace("/(tabs)/hospital");
-            } else {
-              router.replace("/(tabs)/municipal");
-            }
-          }}
+          style={[styles.loginBtn, loading && { opacity: 0.7 }]}
+          onPress={handleLogin}
+          disabled={loading}
         >
-          <Text style={styles.loginText}>Login as {selectedRole}</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginText}>Login as {selectedRole}</Text>
+          )}
         </TouchableOpacity>
 
         {/* SIGNUP */}

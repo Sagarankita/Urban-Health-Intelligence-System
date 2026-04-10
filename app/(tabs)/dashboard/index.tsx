@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback } from "react";
 import {
   FlatList,
   Modal,
@@ -11,13 +11,15 @@ import {
   View,
 } from "react-native";
 import API from "../../../services/api";
+import { useAuth } from "../../../services/AuthContext";
 
 type City = { id: number; state: string; name: string };
 type Ward = { id: number; city_id: number; name: string };
 export default function Dashboard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [result, setResult] = React.useState<any>(null);
-  const { risk, recommendation } = useLocalSearchParams();
+  const [riskData, setRiskData] = React.useState<{ risk: string | null; recommendation: string | null }>({ risk: null, recommendation: null });
   const [advisories, setAdvisories] = React.useState<any[]>([]);
   const [advisoryError, setAdvisoryError] = React.useState<string | null>(null);
 
@@ -32,6 +34,22 @@ export default function Dashboard() {
     : selectedCity?.name
       ? `All wards, ${selectedCity.name}`
       : "Select City";
+
+  // Fetch latest risk from DB on mount (persistent risk)
+  React.useEffect(() => {
+    const fetchLatestRisk = async () => {
+      try {
+        const patientName = user?.name || "";
+        const resp = await API.get("/api/latest", { params: { patient_name: patientName } });
+        if (resp.data?.risk) {
+          setRiskData({ risk: resp.data.risk, recommendation: resp.data.recommendation });
+        }
+      } catch (e) {
+        console.error("Failed to load latest risk", e);
+      }
+    };
+    fetchLatestRisk();
+  }, [user?.name]);
 
   React.useEffect(() => {
     const loadCities = async () => {
@@ -56,8 +74,9 @@ export default function Dashboard() {
         const resp = await API.get(`/api/geo/cities/${selectedCity.id}/wards`);
         const list = Array.isArray(resp.data) ? resp.data : [];
         setWards(list);
-        // Default to Ward 23 if present
-        const w23 = list.find((w: any) => w.name === "Ward 23") || null;
+        // Default to user's ward if present
+        const userWard = user?.ward ? list.find((w: any) => w.name === user.ward) : null;
+        const w23 = userWard || list.find((w: any) => w.name === "Ward 23") || null;
         setSelectedWard(w23); // if null => all wards
       } catch (e) {
         console.error("Failed to load wards", e);
@@ -88,17 +107,7 @@ export default function Dashboard() {
     loadAdvisories();
   }, [selectedCity?.id, selectedWard?.id]);
   
-  const getRiskStyle = (risk: string) => {
-  switch (risk) {
-    case "Severe":
-      return styles.severeRisk;
-    case "Moderate":
-      return styles.moderateRisk;
-    default:
-      return styles.lowRisk;
-  }
-};
-const getRiskUI = (risk: string) => {
+  const getRiskUI = (risk: string) => {
   switch (risk) {
     case "Severe":
       return {
@@ -123,15 +132,18 @@ const getRiskUI = (risk: string) => {
       };
   }
 };
-const riskValue = (risk as string) || "Low";
+const riskValue = riskData.risk || "Low";
 const riskUI = getRiskUI(riskValue);
+const userName = user?.name || "User";
+const userInsurance = user?.insurance || "N/A";
+const userAbha = user?.abha || "N/A";
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcome}>Welcome back,</Text>
-          <Text style={styles.name}>Priya Sharma</Text>
+          <Text style={styles.name}>{userName}</Text>
           <Text style={styles.location}>{locationLabel}</Text>
         </View>
 
@@ -157,7 +169,7 @@ const riskUI = getRiskUI(riskValue);
     </Text>
 
     <Text style={styles.riskDesc}>
-      {recommendation ||
+      {riskData.recommendation ||
         "No recent symptom reports • You're doing great!"}
     </Text>
   </View>
@@ -319,7 +331,7 @@ const riskUI = getRiskUI(riskValue);
 
         <View style={{ marginLeft: 10 }}>
           <Text style={{ fontWeight: "600" }}>Profile Settings</Text>
-          <Text style={{ color: "gray" }}>PM-JAY • ABHA: 1234</Text>
+          <Text style={{ color: "gray" }}>{userInsurance} • ABHA: {userAbha}</Text>
         </View>
       </TouchableOpacity>
     </ScrollView>
@@ -390,26 +402,6 @@ const styles = StyleSheet.create({
   },
 
   riskTitle: { fontSize: 14 },
-  lowRisk: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#15803D",
-    marginTop: 4,
-  },
-
-  moderateRisk: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "#F59E0B",
-  marginTop: 4,
-},
-
-severeRisk: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "#DC2626",
-  marginTop: 4,
-},
 
   riskDesc: { fontSize: 13, marginTop: 4 },
 
@@ -459,14 +451,6 @@ severeRisk: {
     marginTop: 4,
   },
 
-  alertCard: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 16,
-    borderRadius: 18,
-    elevation: 2,
-  },
-
   alertTitle: {
     fontWeight: "bold",
     fontSize: 16,
@@ -475,26 +459,6 @@ severeRisk: {
   alertDesc: {
     marginTop: 5,
     color: "gray",
-  },
-
-  progressBar: {
-    height: 6,
-    backgroundColor: "#eee",
-    borderRadius: 10,
-    marginTop: 12,
-  },
-
-  progressFill: {
-    width: "60%",
-    height: 6,
-    backgroundColor: "orange",
-    borderRadius: 10,
-  },
-
-  riskPercent: {
-    marginTop: 6,
-    fontWeight: "bold",
-    color: "orange",
   },
 
   simpleCard: {
@@ -517,6 +481,11 @@ severeRisk: {
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     maxHeight: "70%",
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   pickItem: {
     paddingVertical: 14,

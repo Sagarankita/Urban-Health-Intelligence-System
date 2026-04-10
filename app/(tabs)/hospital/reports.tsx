@@ -1,7 +1,8 @@
 import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,10 +13,10 @@ import {
   View,
 } from "react-native";
 
-const HOSPITAL_ID = 1;
-
 export default function ReportsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id || 1;
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -32,11 +33,13 @@ export default function ReportsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HOSPITAL_ID]);
 
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReports();
+    }, [fetchReports])
+  );
 
   const handleMarkCritical = async (id: number) => {
     try {

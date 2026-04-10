@@ -1,7 +1,7 @@
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -16,9 +16,11 @@ export default function CapacityScreen() {
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCapacity();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCapacity();
+    }, [])
+  );
 
   const fetchCapacity = async () => {
     try {

@@ -22,6 +22,63 @@ export const listHospitals = async (req, res) => {
 };
 
 /**
+ * GET /api/hospitals/enriched
+ * List hospitals with real computed metrics (wait time, load, type) for find-hospital screen.
+ */
+export const listHospitalsEnriched = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        h.id, h.name, h.location,
+        r.gen_beds, r.icu_beds, r.ventilators, r.status,
+        COALESCE(appt_counts.today_count, 0) AS today_appointments,
+        COALESCE(appt_counts.pending_count, 0) AS pending_appointments
+      FROM hospitals h
+      LEFT JOIN resources r ON h.id = r.hospital_id
+      LEFT JOIN (
+        SELECT hospital_id,
+          COUNT(*) FILTER (WHERE appointment_date = CURRENT_DATE) AS today_count,
+          COUNT(*) FILTER (WHERE appointment_date = CURRENT_DATE AND status = 'PENDING') AS pending_count
+        FROM appointments
+        GROUP BY hospital_id
+      ) appt_counts ON h.id = appt_counts.hospital_id
+      ORDER BY h.id
+    `);
+
+    const enriched = result.rows.map((h) => {
+      // Compute wait from pending appointments (~10 mins per pending appointment)
+      const waitMins = Math.max(5, (h.pending_appointments || 0) * 10);
+      // Compute load from status + bed count
+      let load = "low";
+      if (h.status === "CLOSED") load = "high";
+      else if (h.status === "LIMITED" || (h.gen_beds !== null && h.gen_beds < 10)) load = "high";
+      else if (h.gen_beds !== null && h.gen_beds < 30) load = "medium";
+      // Type from total beds
+      const totalBeds = (h.gen_beds || 0) + (h.icu_beds || 0);
+      let type = "Primary Care";
+      if (totalBeds > 100) type = "Multi-Specialty";
+      else if (totalBeds > 40) type = "General Hospital";
+      // Match factor: higher beds & lower load = better match
+      const match = Math.min(98, Math.max(60, 90 - (h.pending_appointments || 0) * 2 + (h.gen_beds || 0) / 5));
+
+      return {
+        ...h,
+        wait: `${waitMins} mins`,
+        load,
+        type,
+        match: Math.round(match),
+        dept: "General Medicine",
+      };
+    });
+
+    res.json(enriched);
+  } catch (e) {
+    console.error("listHospitalsEnriched error:", e);
+    res.status(500).json({ error: "Failed to list hospitals" });
+  }
+};
+
+/**
  * GET /api/hospitals/:id
  * Single hospital with resources.
  */

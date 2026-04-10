@@ -1,4 +1,5 @@
 import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -14,6 +15,7 @@ import {
 
 export default function FindHospitalScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -25,19 +27,10 @@ export default function FindHospitalScreen() {
   const fetchHospitals = async () => {
     try {
       setLoading(true);
-      const res = await API.get("/api/hospitals");
+      // Use the enriched endpoint that returns real computed metrics
+      const res = await API.get("/api/hospitals/enriched");
       const data = Array.isArray(res.data) ? res.data : [];
-      // Add calculated fields for display
-      const enriched = data.map((h: any, idx: number) => ({
-        ...h,
-        distance: `${(1.5 + idx * 0.7).toFixed(1)} km`,
-        wait: `${15 + idx * 10} mins`,
-        match: Math.max(70, 95 - idx * 5),
-        load: h.status === "LIMITED" ? "high" : h.gen_beds > 30 ? "low" : "medium",
-        dept: "General Medicine",
-        type: idx === 0 ? "Multi-Specialty" : idx < 3 ? "Primary Care" : "Specialty",
-      }));
-      setHospitals(enriched);
+      setHospitals(data);
     } catch (err) {
       console.error("Failed to fetch hospitals:", err);
     } finally {
@@ -48,12 +41,12 @@ export default function FindHospitalScreen() {
   const handleBook = async (hospital: any) => {
     try {
       await API.post("/api/appointments", {
-        patient_name: "Priya Sharma",
-        department: "General Medicine",
+        patient_name: user?.name || "Patient",
+        department: hospital.dept || "General Medicine",
         hospital_id: hospital.id,
         appointment_date: new Date().toISOString().split("T")[0],
         appointment_time: "10:30 AM",
-        insurance: "PM-JAY",
+        insurance: user?.insurance || null,
         priority: "NORMAL",
       });
       Alert.alert("Booked!", `Appointment booked at ${hospital.name}`, [

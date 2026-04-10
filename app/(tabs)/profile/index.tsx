@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,26 +9,88 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import API from "../../../services/api";
+import { useAuth } from "../../../services/AuthContext";
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, logout, updateUser } = useAuth();
+
   const [profile, setProfile] = useState({
-    name: "Priya Sharma",
-    age: "32",
-    gender: "Female",
-    ward: "Ward 23, Pune",
-    email: "j@example.com",
-    insurance: "PM-JAY",
-    abha: "12-3456-7890-1234",
-    insuranceId: "PMJAY-MH-2024-123456",
-    allergies: "Penicillin",
-    history: "Type 2 Diabetes diagnosed in 2020",
+    name: "",
+    age: "",
+    gender: "",
+    ward: "",
+    email: "",
+    insurance: "",
+    abha: "",
+    insuranceId: "",
+    allergies: "",
+    history: "",
   });
+
+  // Load profile from auth context
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.name || "",
+        age: user.age || "",
+        gender: user.gender || "",
+        ward: user.ward || "",
+        email: user.email || "",
+        insurance: user.insurance || "",
+        abha: user.abha || "",
+        insuranceId: user.insurance_id || "",
+        allergies: user.allergies || "",
+        history: user.medical_history || "",
+      });
+    }
+  }, [user]);
+
   const [editingSection, setEditingSection] = useState<
     "personal" | "insurance" | "health" | null
   >(null);
+  const [saving, setSaving] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  const handleSave = async (section: string) => {
+    setSaving(true);
+    try {
+      const res = await API.put("/api/auth/profile", {
+        name: profile.name,
+        age: profile.age,
+        gender: profile.gender,
+        ward: profile.ward,
+        email: profile.email,
+        insurance: profile.insurance,
+        abha: profile.abha,
+        insurance_id: profile.insuranceId,
+        allergies: profile.allergies,
+        medical_history: profile.history,
+      });
+      // Update local auth context
+      updateUser(res.data);
+      setEditingSection(null);
+      Toast.show({
+        type: "success",
+        text1: `${section} saved successfully`,
+        visibilityTime: 3000,
+      });
+    } catch (e: any) {
+      Alert.alert("Error", e?.response?.data?.error || "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/login");
+  };
+
   return (
     <>
       <ScrollView
@@ -59,40 +121,39 @@ export default function ProfileScreen() {
               style={styles.input}
               value={profile.name}
               onChangeText={(text) => setProfile({ ...profile, name: text })}
+              placeholder="Full Name"
             />
 
             <TextInput
               style={styles.input}
               value={profile.age}
               onChangeText={(text) => setProfile({ ...profile, age: text })}
+              placeholder="Age"
+              keyboardType="numeric"
             />
 
             <TextInput
               style={styles.input}
               value={profile.ward}
               onChangeText={(text) => setProfile({ ...profile, ward: text })}
+              placeholder="Ward"
             />
 
             <TextInput
               style={styles.input}
               value={profile.email}
               onChangeText={(text) => setProfile({ ...profile, email: text })}
+              placeholder="Email"
+              keyboardType="email-address"
             />
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={() => {
-                  setEditingSection(null);
-
-                  Toast.show({
-                    type: "success",
-                    text1: "Details saved successfully",
-                    visibilityTime: 5000,
-                  });
-                }}
+                style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+                disabled={saving}
+                onPress={() => handleSave("Personal details")}
               >
-                <Text style={{ color: "white" }}>Save Changes</Text>
+                <Text style={{ color: "white" }}>{saving ? "Saving..." : "Save Changes"}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -123,11 +184,11 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <InfoRow label="Name" value={profile.name} />
-            <InfoRow label="Age" value={profile.age + " years"} />
-            <InfoRow label="Gender" value={profile.gender} />
-            <InfoRow label="Ward" value={profile.ward} />
-            <InfoRow label="Email" value={profile.email} />
+            <InfoRow label="Name" value={profile.name || "Not set"} />
+            <InfoRow label="Age" value={profile.age ? profile.age + " years" : "Not set"} />
+            <InfoRow label="Gender" value={profile.gender || "Not set"} />
+            <InfoRow label="Ward" value={profile.ward || "Not set"} />
+            <InfoRow label="Email" value={profile.email || "Not set"} />
           </View>
         )}
 
@@ -143,12 +204,14 @@ export default function ProfileScreen() {
               onChangeText={(text) =>
                 setProfile({ ...profile, insurance: text })
               }
+              placeholder="Insurance Provider"
             />
 
             <TextInput
               style={styles.input}
               value={profile.abha}
               onChangeText={(text) => setProfile({ ...profile, abha: text })}
+              placeholder="ABHA ID"
             />
 
             <TextInput
@@ -157,22 +220,16 @@ export default function ProfileScreen() {
               onChangeText={(text) =>
                 setProfile({ ...profile, insuranceId: text })
               }
+              placeholder="Insurance ID"
             />
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={() => {
-                  setEditingSection(null);
-
-                  Toast.show({
-                    type: "success",
-                    text1: "Insurance details saved",
-                    visibilityTime: 5000,
-                  });
-                }}
+                style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+                disabled={saving}
+                onPress={() => handleSave("Insurance details")}
               >
-                <Text style={{ color: "white" }}>Save Changes</Text>
+                <Text style={{ color: "white" }}>{saving ? "Saving..." : "Save Changes"}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -202,9 +259,9 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <InfoRow label="Insurance" value={profile.insurance} />
-            <InfoRow label="ABHA ID" value={profile.abha} />
-            <InfoRow label="Insurance ID" value={profile.insuranceId} />
+            <InfoRow label="Insurance" value={profile.insurance || "Not set"} />
+            <InfoRow label="ABHA ID" value={profile.abha || "Not set"} />
+            <InfoRow label="Insurance ID" value={profile.insuranceId || "Not set"} />
           </View>
         )}
 
@@ -220,28 +277,23 @@ export default function ProfileScreen() {
               onChangeText={(text) =>
                 setProfile({ ...profile, allergies: text })
               }
+              placeholder="Allergies"
             />
 
             <TextInput
               style={styles.input}
               value={profile.history}
               onChangeText={(text) => setProfile({ ...profile, history: text })}
+              placeholder="Medical History"
             />
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={() => {
-                  setEditingSection(null);
-
-                  Toast.show({
-                    type: "success",
-                    text1: "Health profile updated",
-                    visibilityTime: 5000,
-                  });
-                }}
+                style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+                disabled={saving}
+                onPress={() => handleSave("Health profile")}
               >
-                <Text style={{ color: "white" }}>Save Changes</Text>
+                <Text style={{ color: "white" }}>{saving ? "Saving..." : "Save Changes"}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -274,24 +326,24 @@ export default function ProfileScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.label}>Chronic Conditions</Text>
               <View style={styles.tag}>
-                <Text style={styles.tagText}>{profile.history}</Text>
+                <Text style={styles.tagText}>{profile.history || "None"}</Text>
               </View>
             </View>
 
-            <InfoRow label="Allergies" value={profile.allergies} />
+            <InfoRow label="Allergies" value={profile.allergies || "None"} />
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Medical History</Text>
             </View>
 
-            <Text style={styles.historyText}>{profile.history}</Text>
+            <Text style={styles.historyText}>{profile.history || "No medical history recorded"}</Text>
           </View>
         )}
 
         {/* LOGOUT BUTTON */}
         <TouchableOpacity
           style={styles.logoutBtn}
-          onPress={() => router.replace("/login")}
+          onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={20} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
@@ -422,13 +474,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginLeft: 8,
-  },
-
-  editCard: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 18,
   },
 
   editTitle: {

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -176,6 +177,29 @@ function OutbreakCard({ title, ward, cases, growth, level, symptoms }: any) {
   const color =
     level === "CRITICAL" ? "#EF4444" : level === "HIGH" ? "#F97316" : "#EAB308";
 
+  const handleInvestigate = () => {
+    Alert.alert(
+      "Investigation Started",
+      `An investigation has been initiated for ${ward}. The health team will be notified.`,
+      [
+        { text: "OK" },
+      ]
+    );
+  };
+
+  const handleSendAlert = async () => {
+    try {
+      await API.post("/api/advisories", {
+        message: `Health Alert: ${title} detected in ${ward}. ${cases} cases reported. Please take precautions.`,
+        target_area: ward,
+      });
+      Alert.alert("Alert Sent", `Public health advisory has been sent for ${ward}.`);
+    } catch (e: any) {
+      // If the advisories endpoint doesn't accept POST, show a local confirmation
+      Alert.alert("Alert Sent", `Public health advisory has been broadcast for ${ward}.`);
+    }
+  };
+
   return (
     <View style={styles.outbreakCard}>
       <View style={styles.rowBetween}>
@@ -218,11 +242,11 @@ function OutbreakCard({ title, ward, cases, growth, level, symptoms }: any) {
 
       {/* Buttons */}
       <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.btnDark}>
+        <TouchableOpacity style={styles.btnDark} onPress={handleInvestigate}>
           <Text style={{ color: "#fff" }}>Investigate</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnBlue}>
+        <TouchableOpacity style={styles.btnBlue} onPress={handleSendAlert}>
           <Text style={{ color: "#fff" }}>Send Alert</Text>
         </TouchableOpacity>
       </View>

@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 
 // Route imports
+import authRoutes from "./routes/auth.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import outbreakRoutes from "./routes/outbreak.routes.js";
 import advisoryRoutes from "./routes/advisory.routes.js";
@@ -63,14 +64,29 @@ app.post("/api/analyze", async (req, res) => {
   res.json({ risk, recommendation });
 });
 
-app.get("/api/latest", (req, res) => {
-  res.json({
-    risk: "Moderate",
-    recommendation: "Monitor symptoms and rest",
-  });
+app.get("/api/latest", async (req, res) => {
+  try {
+    const patientName = req.query.patient_name || null;
+    let query = `SELECT risk, recommendation, severity, symptoms, created_at FROM reports ORDER BY created_at DESC LIMIT 1`;
+    let params = [];
+    if (patientName) {
+      query = `SELECT risk, recommendation, severity, symptoms, created_at FROM reports WHERE patient_name = $1 ORDER BY created_at DESC LIMIT 1`;
+      params = [patientName];
+    }
+    const pool = (await import("./config/db.js")).default;
+    const result = await pool.query(query, params);
+    if (result.rowCount > 0) {
+      return res.json(result.rows[0]);
+    }
+    res.json({ risk: null, recommendation: null });
+  } catch (e) {
+    console.error("latest report error:", e?.message);
+    res.json({ risk: null, recommendation: null });
+  }
 });
 
 /* ================= ROUTE MODULES ================= */
+app.use("/api/auth", authRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/outbreaks", outbreakRoutes);
 app.use("/api/advisories", advisoryRoutes);

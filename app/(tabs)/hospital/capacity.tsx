@@ -1,7 +1,8 @@
 import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,10 +14,10 @@ import {
   View,
 } from "react-native";
 
-const HOSPITAL_ID = 1;
-
 export default function CapacityScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id || 1;
 
   const [generalBeds, setGeneralBeds] = useState("0");
   const [icuBeds, setIcuBeds] = useState("0");
@@ -25,9 +26,11 @@ export default function CapacityScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCurrentCapacity();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCurrentCapacity();
+    }, [HOSPITAL_ID])
+  );
 
   const fetchCurrentCapacity = async () => {
     try {

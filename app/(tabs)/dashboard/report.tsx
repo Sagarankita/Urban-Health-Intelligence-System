@@ -1,4 +1,5 @@
 import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -13,6 +14,7 @@ import {
 
 export default function ReportSymptoms() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const symptoms = [
     "Fever",
@@ -70,15 +72,14 @@ export default function ReportSymptoms() {
       symptoms: selectedSymptoms,
       duration,
       severity,
+      patient_name: user?.name || "Anonymous Patient",
+      ward: user?.ward || "Unknown",
     });
     console.log("FRONTEND RESPONSE:", res.data);
     setResult(res.data);
     router.push({
       pathname: "/dashboard",
-      params: {
-        risk: res.data.risk,
-        recommendation: res.data.recommendation,
-      },
+      params: {},
     });
   } catch (err) {
     console.error(err);
@@ -107,7 +108,7 @@ export default function ReportSymptoms() {
 
       <View style={styles.locationRow}>
         <Ionicons name="location-outline" size={18} color="#1E88E5" />
-        <Text style={styles.locationText}>Location: Ward 23, Pune</Text>
+        <Text style={styles.locationText}>Location: {user?.ward || "Not set"}</Text>
       </View>
 
       {/* SYMPTOMS CARD */}
