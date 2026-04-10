@@ -1,0 +1,40 @@
+Pending Tasks & Incomplete Features for Urban Health Intelligence System:
+
+1. Authentication & User Management
+- The Login screen (`app/login.tsx`) has no backend API integration. It just redirects directly to the dashboards based on the selected role without verifying credentials.
+- The Create Account screens (Patient, Hospital, Municipal) do not make any API calls; they only show a success alert ("Account Created Successfully!") and navigate. Backend registration routes are missing.
+- "Forgot Password" functionality is purely visual and lacks OTP or reset link functionality.
+- The backend is entirely missing user management, authentication controllers (no `auth.controller.js`), passport/JWT mechanisms, or session middleware.
+
+2. User Profile Validation & Persistence
+- The profile screen (`app/(tabs)/profile/index.tsx`) uses hardcoded default identity data ("Priya Sharma", "PM-JAY", "Ward 23").
+- Editing profile data only updates local UI state and shows a Toast notification. There is no API call or backend route to persist user profile changes to the PostgreSQL database.
+
+3. Hardcoded Contexts & Fake Data
+- In `app/(tabs)/dashboard/find-hospital.tsx`, crucial attributes like distance, wait time, match factor, bed load, and department are generated artificially using array indices rather than performing real geospatial or database-backed lookup.
+- User identities are hardcoded across portals (`HOSPITAL_ID = 1` simulating "City General Hospital" for Dr. Amit Verma, and "Priya Sharma" for Patient Dashboard).
+- In `app/(tabs)/dashboard/report.tsx`, the patient's location is hardcoded as "Location: Ward 23, Pune". 
+- Patient identity is hardcoded when creating appointments.
+
+4. Backend Architecture
+- A majority of the backend logic is tightly coupled into controllers (`appointment`, `hospital`, `geo`, `report`, `outbreak`). A clean Service layer is mostly missing except for `advisory.service` and `resource.service`. 
+
+5. Session Management
+- "Logout" buttons across the application simply use `router.replace("/login")`. They need to actually clear context, tokens, or sessions once authentication is implemented.
+
+6. Patient Dashboard Risk is NOT Persistent
+- The patient dashboard (`app/(tabs)/dashboard/index.tsx`) does not fetch the user's latest symptom report from the DB to show their current risk level. Instead, it relies temporarily on URL parameters (`useLocalSearchParams()`). If the app is restarted or the route is re-entered, the risk dynamically resets to "Low" and "No recent symptom reports" regardless of the database history.
+
+7. Non-Functional Outbreak Actions
+- In the Municipal Outbreak screen (`app/(tabs)/municipal/outbreak.tsx`), the "Investigate" and "Send Alert" buttons do not have an `onPress` action attached and do not trigger any API call or state changes.
+
+Patient Dashboard Risk is Volatile: The Patient Dashboard (dashboard/index.tsx) does not automatically fetch a patient's most recent symptom report from the DB. Instead, it temporarily displays risk from URL parameters. If the page is reloaded or restarted, your risk resets completely back to "Low" instead of dynamically syncing with the DB.
+Missing Outbreak Functions: Inside municipal/outbreak.tsx, the "Investigate" and "Send Alert" buttons lack an onPress configuration. They do not trigger any API calls, meaning actions made here are completely ignored.
+Ghost Forms (Zero Database Routing):
+The "Create Account" registration forms.
+Profile Information Edits (updating age, ward, insurance info).
+Forgot Password processes. None of the aforementioned forms make API calls to the backend, meaning submitted inputs disappear immediately and are never saved to the DB.
+Mocked Geospatial Sync: In find-hospital.tsx, the system accurately fetches the list of hospitals from the database but artificially mocks the distance, active wait time, and condition match percentage by generating them with basic frontend array indexing instead of pulling real measurements from the backend!
+
+WHENEVER we update bed availibility or something it does not update upon the dashboard.So their is no dynamic updation we want that at every single place
+also when we open the app a page of unmatched route but it should take us to the lOgin page.

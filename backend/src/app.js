@@ -1,11 +1,14 @@
 import cors from "cors";
 import express from "express";
 
-// 👉 NEW: import routes
+// Route imports
 import resourceRoutes from "./routes/resource.routes.js";
 import outbreakRoutes from "./routes/outbreak.routes.js";
 import advisoryRoutes from "./routes/advisory.routes.js";
 import geoRoutes from "./routes/geo.routes.js";
+import hospitalRoutes from "./routes/hospital.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
+import reportRoutes from "./routes/report.routes.js";
 
 const app = express();
 
@@ -18,7 +21,7 @@ app.get("/", (req, res) => {
 });
 
 /* ================= EXISTING FEATURE ================= */
-app.post("/api/analyze", (req, res) => {
+app.post("/api/analyze", async (req, res) => {
   console.log("REQ BODY:", req.body);
 
   const { symptoms, duration, severity } = req.body;
@@ -31,13 +34,33 @@ app.post("/api/analyze", (req, res) => {
     risk = "Moderate";
   }
 
-  res.json({
-    risk,
-    recommendation:
-      risk === "Severe"
-        ? "Visit hospital immediately"
-        : "Monitor symptoms and rest",
-  });
+  const recommendation =
+    risk === "Severe"
+      ? "Visit hospital immediately"
+      : "Monitor symptoms and rest";
+
+  // Also persist the report to DB (best-effort)
+  try {
+    const pool = (await import("./config/db.js")).default;
+    await pool.query(
+      `INSERT INTO reports (symptoms, severity, risk, ward, patient_name, hospital_id, status, recommendation)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        JSON.stringify(symptoms),
+        severity,
+        risk,
+        req.body.ward || "Ward 23, Pune",
+        req.body.patient_name || "Anonymous Patient",
+        req.body.hospital_id || 1,
+        "NEW",
+        recommendation,
+      ]
+    );
+  } catch (dbErr) {
+    console.log("Could not persist report to DB:", dbErr?.message);
+  }
+
+  res.json({ risk, recommendation });
 });
 
 app.get("/api/latest", (req, res) => {
@@ -47,17 +70,13 @@ app.get("/api/latest", (req, res) => {
   });
 });
 
-/* ================= NEW RESOURCE SYSTEM ================= */
-
-// 👉 all resource routes go here
+/* ================= ROUTE MODULES ================= */
 app.use("/api/resources", resourceRoutes);
 app.use("/api/outbreaks", outbreakRoutes);
 app.use("/api/advisories", advisoryRoutes);
 app.use("/api/geo", geoRoutes);
-/*
-Now available:
-POST /api/resources/update
-GET  /api/resources/municipal
-*/
+app.use("/api/hospitals", hospitalRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/reports", reportRoutes);
 
 export default app;

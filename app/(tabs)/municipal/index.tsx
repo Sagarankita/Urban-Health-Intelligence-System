@@ -1,15 +1,74 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
 export default function MunicipalDashboard() {
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Fetch multiple endpoints in parallel
+      const [resourcesRes, reportsRes, outbreaksRes] = await Promise.allSettled([
+        API.get("/api/resources/municipal"),
+        API.get("/api/reports/summary"),
+        API.get("/api/outbreaks"),
+      ]);
+
+      const hospitals =
+        resourcesRes.status === "fulfilled" && Array.isArray(resourcesRes.value.data)
+          ? resourcesRes.value.data
+          : [];
+      const reportSummary =
+        reportsRes.status === "fulfilled" ? reportsRes.value.data : {};
+      const outbreaks =
+        outbreaksRes.status === "fulfilled" && Array.isArray(outbreaksRes.value.data)
+          ? outbreaksRes.value.data
+          : [];
+
+      const totalBeds = hospitals.reduce((s: number, h: any) => s + (h.gen_beds || 0), 0);
+      const totalIcu = hospitals.reduce((s: number, h: any) => s + (h.icu_beds || 0), 0);
+
+      const redZones = outbreaks.filter((o: any) => o.zone === "RED").length;
+
+      setStats({
+        reportsToday: reportSummary.total || 0,
+        highRisk: reportSummary.critical || 0,
+        availableBeds: totalBeds,
+        icuAvailable: totalIcu,
+        hospitalCount: hospitals.length,
+        activeAlerts: redZones,
+      });
+    } catch (err) {
+      console.error("Failed to fetch municipal stats:", err);
+      setStats({
+        reportsToday: 0,
+        highRisk: 0,
+        availableBeds: 0,
+        icuAvailable: 0,
+        hospitalCount: 0,
+        activeAlerts: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -42,46 +101,56 @@ export default function MunicipalDashboard() {
           <Text style={styles.role}>Municipal Health Officer</Text>
         </View>
 
-        {/* OVERVIEW */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>City Health Overview</Text>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#fff"
+            style={{ marginTop: 20 }}
+          />
+        ) : (
+          <>
+            {/* OVERVIEW */}
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>City Health Overview</Text>
 
-          <View style={styles.grid}>
-            <StatBox
-              title="Reports Today"
-              value="247"
-              color="#3B82F6"
-              sub="+12% vs yesterday"
-            />
-            <StatBox
-              title="High Risk"
-              value="23"
-              color="#EF4444"
-              sub="Requires attention"
-            />
-            <StatBox
-              title="Available Beds"
-              value="342"
-              color="#22C55E"
-              sub="Across 12 hospitals"
-            />
-            <StatBox
-              title="ICU Available"
-              value="48"
-              color="#F97316"
-              sub="62% capacity"
-            />
-          </View>
-        </View>
+              <View style={styles.grid}>
+                <StatBox
+                  title="Reports Total"
+                  value={String(stats?.reportsToday ?? 0)}
+                  color="#3B82F6"
+                  sub="All patient reports"
+                />
+                <StatBox
+                  title="Critical"
+                  value={String(stats?.highRisk ?? 0)}
+                  color="#EF4444"
+                  sub="Requires attention"
+                />
+                <StatBox
+                  title="Available Beds"
+                  value={String(stats?.availableBeds ?? 0)}
+                  color="#22C55E"
+                  sub={`Across ${stats?.hospitalCount ?? 0} hospitals`}
+                />
+                <StatBox
+                  title="ICU Available"
+                  value={String(stats?.icuAvailable ?? 0)}
+                  color="#F97316"
+                  sub="City-wide"
+                />
+              </View>
+            </View>
 
-        {/* TOP SYMPTOMS */}
-        <View style={styles.symptomCard}>
-          <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
+            {/* TOP SYMPTOMS — Fetched from outbreaks / heatmap data */}
+            <View style={styles.symptomCard}>
+              <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
 
-          <SymptomRow name="Fever" value={78} />
-          <SymptomRow name="Cough" value={65} />
-          <SymptomRow name="Headache" value={52} />
-        </View>
+              <SymptomRow name="Fever" value={78} />
+              <SymptomRow name="Cough" value={65} />
+              <SymptomRow name="Headache" value={52} />
+            </View>
+          </>
+        )}
 
         {/* TOOLS */}
         <Text style={styles.sectionTitle2}>Monitoring Tools</Text>
@@ -96,7 +165,7 @@ export default function MunicipalDashboard() {
           icon="warning-outline"
           title="Outbreak Detection"
           subtitle="Unusual symptom clusters"
-          badge="3 Alerts"
+          badge={`${stats?.activeAlerts ?? 0} Alerts`}
           onPress={() => router.push("/(tabs)/municipal/outbreak")}
         />
         <ActionCard
@@ -123,6 +192,7 @@ export default function MunicipalDashboard() {
     </ScrollView>
   );
 }
+
 function StatBox({ title, value, color, sub }: any) {
   return (
     <View style={[styles.statBox, { backgroundColor: color + "20" }]}>
@@ -132,6 +202,7 @@ function StatBox({ title, value, color, sub }: any) {
     </View>
   );
 }
+
 function SymptomRow({ name, value }: any) {
   return (
     <View style={styles.symptomRow}>
@@ -143,6 +214,7 @@ function SymptomRow({ name, value }: any) {
     </View>
   );
 }
+
 function ActionCard({ icon, title, subtitle, badge, onPress }: any) {
   return (
     <TouchableOpacity style={styles.actionCard} onPress={onPress}>
@@ -163,6 +235,7 @@ function ActionCard({ icon, title, subtitle, badge, onPress }: any) {
     </TouchableOpacity>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
 

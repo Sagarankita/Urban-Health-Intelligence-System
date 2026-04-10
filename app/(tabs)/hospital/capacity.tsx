@@ -1,7 +1,10 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,18 +13,68 @@ import {
   View,
 } from "react-native";
 
+const HOSPITAL_ID = 1;
+
 export default function CapacityScreen() {
   const router = useRouter();
 
-  const [generalBeds, setGeneralBeds] = useState("45");
-  const [icuBeds, setIcuBeds] = useState("8");
-  const [ventilators, setVentilators] = useState("12");
-
+  const [generalBeds, setGeneralBeds] = useState("0");
+  const [icuBeds, setIcuBeds] = useState("0");
+  const [ventilators, setVentilators] = useState("0");
   const [status, setStatus] = useState("active");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchCurrentCapacity();
+  }, []);
+
+  const fetchCurrentCapacity = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get(`/api/hospitals/${HOSPITAL_ID}`);
+      const data = res.data;
+      setGeneralBeds(String(data.gen_beds ?? 0));
+      setIcuBeds(String(data.icu_beds ?? 0));
+      setVentilators(String(data.ventilators ?? 0));
+      setStatus((data.status ?? "ACTIVE").toLowerCase());
+    } catch (err) {
+      console.error("Failed to fetch capacity:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await API.post("/api/resources/update", {
+        hospital_id: HOSPITAL_ID,
+        gen_beds: Number(generalBeds),
+        icu_beds: Number(icuBeds),
+        ventilators: Number(ventilators),
+        status: status.toUpperCase(),
+      });
+      Alert.alert("Success", "Bed availability updated successfully!");
+    } catch (err) {
+      console.error("Failed to save capacity:", err);
+      Alert.alert("Error", "Could not update capacity");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const calcPercent = (available: number, total: number) => {
     return Math.round(((total - available) / total) * 100);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#1E88E5" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -186,6 +239,18 @@ export default function CapacityScreen() {
           ))}
         </View>
 
+        {/* SAVE BUTTON */}
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+          <Text style={styles.saveBtnText}>
+            {saving ? "Saving..." : "Update & Sync to System"}
+          </Text>
+        </TouchableOpacity>
+
         {/* SUMMARY */}
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Current Availability Summary</Text>
@@ -218,6 +283,7 @@ export default function CapacityScreen() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F7FA" },
 
@@ -320,6 +386,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#2E7D32",
     fontWeight: "600",
+  },
+
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0E2A4E",
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 
   summary: {
