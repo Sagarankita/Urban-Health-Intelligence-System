@@ -1,15 +1,27 @@
-import { Stack } from "expo-router";
-import Toast from "react-native-toast-message";
+import * as Linking from "expo-linking";
+import { Tabs, useRouter } from "expo-router";
+import React from "react";
+import { useEffect } from "react";
 
-export default function RootLayout() {
+export default function TabLayout() {
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-
-      <Toast />
-    </>
+    <Tabs>
+      <Tabs.Screen name="dashboard" />
+      <Tabs.Screen name="hospital" />
+      <Tabs.Screen name="municipal" />
+      <Tabs.Screen name="profile" />
+    </Tabs>
   );
 }
+
+const router = useRouter();
+
+useEffect(() => {
+  const sub = Linking.addEventListener("url", ({ url }) => {
+    if (url.includes("login")) {
+      router.replace("/login");
+    }
+  });
+
+  return () => sub.remove();
+}, []);

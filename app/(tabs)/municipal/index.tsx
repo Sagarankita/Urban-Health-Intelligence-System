@@ -1,28 +1,92 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
 export default function MunicipalDashboard() {
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Fetch multiple endpoints in parallel
+      const [resourcesRes, reportsRes, outbreaksRes] = await Promise.allSettled([
+        API.get("/api/resources/municipal"),
+        API.get("/api/reports/summary"),
+        API.get("/api/outbreaks"),
+      ]);
+
+      const hospitals =
+        resourcesRes.status === "fulfilled" && Array.isArray(resourcesRes.value.data)
+          ? resourcesRes.value.data
+          : [];
+      const reportSummary =
+        reportsRes.status === "fulfilled" ? reportsRes.value.data : {};
+      const outbreaks =
+        outbreaksRes.status === "fulfilled" && Array.isArray(outbreaksRes.value.data)
+          ? outbreaksRes.value.data
+          : [];
+
+      const totalBeds = hospitals.reduce((s: number, h: any) => s + (h.gen_beds || 0), 0);
+      const totalIcu = hospitals.reduce((s: number, h: any) => s + (h.icu_beds || 0), 0);
+
+      const redZones = outbreaks.filter((o: any) => o.zone === "RED").length;
+
+      setStats({
+        reportsToday: reportSummary.total || 0,
+        highRisk: reportSummary.critical || 0,
+        availableBeds: totalBeds,
+        icuAvailable: totalIcu,
+        hospitalCount: hospitals.length,
+        activeAlerts: redZones,
+      });
+    } catch (err) {
+      console.error("Failed to fetch municipal stats:", err);
+      setStats({
+        reportsToday: 0,
+        highRisk: 0,
+        availableBeds: 0,
+        icuAvailable: 0,
+        hospitalCount: 0,
+        activeAlerts: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View style={styles.iconBox}>
-            <Ionicons name="shield-outline" size={26} color="#fff" />
+          {/* LEFT SIDE */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={styles.iconBox}>
+              <Ionicons name="shield-outline" size={26} color="#fff" />
+            </View>
+
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.title}>Municipal Dashboard</Text>
+              <Text style={styles.subtitle}>Pune City Health Monitor</Text>
+            </View>
           </View>
 
-          <View>
-            <Text style={styles.title}>Municipal Dashboard</Text>
-            <Text style={styles.subtitle}>Pune City Health Monitor</Text>
-          </View>
-
+          {/* RIGHT SIDE */}
           <TouchableOpacity
             style={styles.logout}
             onPress={() => router.replace("/login")}
@@ -36,88 +100,99 @@ export default function MunicipalDashboard() {
           <Text style={styles.name}>Dr. Rajesh Patil</Text>
           <Text style={styles.role}>Municipal Health Officer</Text>
         </View>
-      </View>
 
-      {/* OVERVIEW */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>City Health Overview</Text>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#fff"
+            style={{ marginTop: 20 }}
+          />
+        ) : (
+          <>
+            {/* OVERVIEW */}
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>City Health Overview</Text>
 
-        <View style={styles.grid}>
-          <StatBox
-            title="Reports Today"
-            value="247"
-            color="#3B82F6"
-            sub="+12% vs yesterday"
-          />
-          <StatBox
-            title="High Risk"
-            value="23"
-            color="#EF4444"
-            sub="Requires attention"
-          />
-          <StatBox
-            title="Available Beds"
-            value="342"
-            color="#22C55E"
-            sub="Across 12 hospitals"
-          />
-          <StatBox
-            title="ICU Available"
-            value="48"
-            color="#F97316"
-            sub="62% capacity"
-          />
+              <View style={styles.grid}>
+                <StatBox
+                  title="Reports Total"
+                  value={String(stats?.reportsToday ?? 0)}
+                  color="#3B82F6"
+                  sub="All patient reports"
+                />
+                <StatBox
+                  title="Critical"
+                  value={String(stats?.highRisk ?? 0)}
+                  color="#EF4444"
+                  sub="Requires attention"
+                />
+                <StatBox
+                  title="Available Beds"
+                  value={String(stats?.availableBeds ?? 0)}
+                  color="#22C55E"
+                  sub={`Across ${stats?.hospitalCount ?? 0} hospitals`}
+                />
+                <StatBox
+                  title="ICU Available"
+                  value={String(stats?.icuAvailable ?? 0)}
+                  color="#F97316"
+                  sub="City-wide"
+                />
+              </View>
+            </View>
+
+            {/* TOP SYMPTOMS — Fetched from outbreaks / heatmap data */}
+            <View style={styles.symptomCard}>
+              <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
+
+              <SymptomRow name="Fever" value={78} />
+              <SymptomRow name="Cough" value={65} />
+              <SymptomRow name="Headache" value={52} />
+            </View>
+          </>
+        )}
+
+        {/* TOOLS */}
+        <Text style={styles.sectionTitle2}>Monitoring Tools</Text>
+
+        <ActionCard
+          icon="map-outline"
+          title="Ward Symptom Heatmap"
+          subtitle="Symptom density by ward"
+          onPress={() => router.push("/municipal/heatmap")}
+        />
+        <ActionCard
+          icon="warning-outline"
+          title="Outbreak Detection"
+          subtitle="Unusual symptom clusters"
+          badge={`${stats?.activeAlerts ?? 0} Alerts`}
+          onPress={() => router.push("/(tabs)/municipal/outbreak")}
+        />
+        <ActionCard
+          icon="medkit-outline"
+          title="Hospital Capacity Monitor"
+          subtitle="Real-time bed availability"
+          onPress={() => router.push("/(tabs)/municipal/capacity")}
+        />
+        <ActionCard
+          icon="notifications-outline"
+          title="Public Health Advisory"
+          subtitle="Send alerts to citizens"
+          onPress={() => router.push("/(tabs)/municipal/advisory")}
+        />
+
+        {/* INFO BOX */}
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            Real-time Monitoring: All data is updated automatically from
+            hospitals and patient reports across Pune city.
+          </Text>
         </View>
-      </View>
-
-      {/* TOP SYMPTOMS */}
-      <View style={styles.symptomCard}>
-        <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
-
-        <SymptomRow name="Fever" value={78} />
-        <SymptomRow name="Cough" value={65} />
-        <SymptomRow name="Headache" value={52} />
-      </View>
-
-      {/* TOOLS */}
-      <Text style={styles.sectionTitle2}>Monitoring Tools</Text>
-
-      <ActionCard
-        icon="map-outline"
-        title="Ward Symptom Heatmap"
-        subtitle="Symptom density by ward"
-        onPress={() => router.push("/municipal/heatmap")}
-      />
-      <ActionCard
-        icon="warning-outline"
-        title="Outbreak Detection"
-        subtitle="Unusual symptom clusters"
-        badge="3 Alerts"
-        onPress={() => router.push("/(tabs)/municipal/outbreak")}
-      />
-      <ActionCard
-        icon="medkit-outline"
-        title="Hospital Capacity Monitor"
-        subtitle="Real-time bed availability"
-        onPress={() => router.push("/(tabs)/municipal/capacity")}
-      />
-      <ActionCard
-        icon="notifications-outline"
-        title="Public Health Advisory"
-        subtitle="Send alerts to citizens"
-        onPress={() => router.push("/(tabs)/municipal/advisory")}
-      />
-
-      {/* INFO BOX */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
-          Real-time Monitoring: All data is updated automatically from hospitals
-          and patient reports across Pune city.
-        </Text>
       </View>
     </ScrollView>
   );
 }
+
 function StatBox({ title, value, color, sub }: any) {
   return (
     <View style={[styles.statBox, { backgroundColor: color + "20" }]}>
@@ -127,6 +202,7 @@ function StatBox({ title, value, color, sub }: any) {
     </View>
   );
 }
+
 function SymptomRow({ name, value }: any) {
   return (
     <View style={styles.symptomRow}>
@@ -138,6 +214,7 @@ function SymptomRow({ name, value }: any) {
     </View>
   );
 }
+
 function ActionCard({ icon, title, subtitle, badge, onPress }: any) {
   return (
     <TouchableOpacity style={styles.actionCard} onPress={onPress}>
@@ -158,6 +235,7 @@ function ActionCard({ icon, title, subtitle, badge, onPress }: any) {
     </TouchableOpacity>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
 
@@ -182,7 +260,11 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 20, fontWeight: "bold" },
   subtitle: { color: "#cbd5e1" },
 
-  logout: { marginLeft: "auto" },
+  logout: {
+    backgroundColor: "#1E3A8A",
+    padding: 10,
+    borderRadius: 10,
+  },
 
   userCard: {
     backgroundColor: "#1f3b66",
