@@ -1,8 +1,10 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,8 +12,36 @@ import {
   View,
 } from "react-native";
 
+// Default hospital ID (City General Hospital)
+const HOSPITAL_ID = 1;
+
 export default function HospitalDashboard() {
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get(`/api/hospitals/${HOSPITAL_ID}/stats`);
+      setStats(res.data);
+    } catch (err) {
+      console.error("Failed to fetch hospital stats:", err);
+      // Fallback stats
+      setStats({
+        today_appointments: 0,
+        incoming_reports: 0,
+        gen_beds: 0,
+        icu_beds: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -43,70 +73,81 @@ export default function HospitalDashboard() {
         </View>
       </View>
 
-      {/* STATS */}
-      <View style={styles.statsContainer}>
-        <StatCard
-          icon="calendar-outline"
-          value="12"
-          label="Today's Appointments"
-          color="#3B82F6"
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#1E88E5"
+          style={{ marginTop: 40 }}
         />
-        <StatCard
-          icon="alert-circle-outline"
-          value="8"
-          label="Incoming Reports"
-          color="#F97316"
-        />
-        <StatCard
-          icon="bed-outline"
-          value="45"
-          label="General Beds"
-          sub="of 200 total"
-          color="#22C55E"
-        />
-        <StatCard
-          icon="pulse-outline"
-          value="8"
-          label="ICU Beds"
-          sub="of 20 total"
-          color="#EF4444"
-        />
-      </View>
+      ) : (
+        <>
+          {/* STATS */}
+          <View style={styles.statsContainer}>
+            <StatCard
+              icon="calendar-outline"
+              value={String(stats?.today_appointments ?? 0)}
+              label="Today's Appointments"
+              color="#3B82F6"
+            />
+            <StatCard
+              icon="alert-circle-outline"
+              value={String(stats?.incoming_reports ?? 0)}
+              label="Incoming Reports"
+              color="#F97316"
+            />
+            <StatCard
+              icon="bed-outline"
+              value={String(stats?.gen_beds ?? 0)}
+              label="General Beds"
+              sub="Available"
+              color="#22C55E"
+            />
+            <StatCard
+              icon="pulse-outline"
+              value={String(stats?.icu_beds ?? 0)}
+              label="ICU Beds"
+              sub="Available"
+              color="#EF4444"
+            />
+          </View>
 
-      {/* QUICK ACTIONS */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+          {/* QUICK ACTIONS */}
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-      <ActionCard
-        icon="document-text-outline"
-        title="Incoming Patient Reports"
-        subtitle="Review symptom reports"
-        onPress={() => router.push("/hospital/reports" as any)}
-      />
+          <ActionCard
+            icon="document-text-outline"
+            title="Incoming Patient Reports"
+            subtitle={`${stats?.incoming_reports ?? 0} new reports`}
+            onPress={() => router.push("/hospital/reports" as any)}
+          />
 
-      <ActionCard
-        icon="calendar-outline"
-        title="Appointment Management"
-        subtitle="Approve or reschedule"
-        onPress={() => router.push("/hospital/appointment" as any)}
-      />
+          <ActionCard
+            icon="calendar-outline"
+            title="Appointment Management"
+            subtitle={`${stats?.pending_appointments ?? 0} pending approvals`}
+            onPress={() => router.push("/hospital/appointment" as any)}
+          />
 
-      <ActionCard
-        icon="settings-outline"
-        title="Bed Availability Update"
-        subtitle="Update bed status"
-        onPress={() => router.push("/hospital/capacity" as any)}
-      />
+          <ActionCard
+            icon="settings-outline"
+            title="Bed Availability Update"
+            subtitle="Update bed status"
+            onPress={() => router.push("/hospital/capacity" as any)}
+          />
 
-      {/* INFO BOX */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
-          System Integration: All updates are synced in real-time with the
-          patient-facing application.
-        </Text>
-      </View>
+          {/* INFO BOX */}
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              System Integration: All updates are synced in real-time with the
+              patient-facing application.
+            </Text>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
+
 function StatCard({ icon, value, label, sub, color }: any) {
   return (
     <View style={styles.statCard}>
@@ -120,6 +161,7 @@ function StatCard({ icon, value, label, sub, color }: any) {
     </View>
   );
 }
+
 function ActionCard({ icon, title, subtitle, onPress }: any) {
   return (
     <TouchableOpacity style={styles.actionCard} onPress={onPress}>
@@ -136,6 +178,7 @@ function ActionCard({ icon, title, subtitle, onPress }: any) {
     </TouchableOpacity>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
 
@@ -217,15 +260,6 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 16,
     borderRadius: 12,
-  },
-
-  logout: {
-    position: "absolute",
-    right: 20,
-    top: 50,
-    backgroundColor: "#1E3A8A",
-    padding: 10,
-    borderRadius: 10,
   },
 
   infoText: { color: "#1E3A8A" },

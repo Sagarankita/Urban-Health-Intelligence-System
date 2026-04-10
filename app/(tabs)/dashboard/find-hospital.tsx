@@ -1,7 +1,10 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,45 +14,64 @@ import {
 
 export default function FindHospitalScreen() {
   const router = useRouter();
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
 
-  const hospitals = [
-    {
-      name: "City General Hospital",
-      type: "Multi-Specialty",
-      dept: "Respiratory Medicine",
-      distance: "2.3 km",
-      wait: "45 mins",
-      match: 94,
-      load: "medium",
-    },
-    {
-      name: "Metro Health Center",
-      type: "Primary Care",
-      dept: "General Medicine",
-      distance: "1.8 km",
-      wait: "20 mins",
-      match: 89,
-      load: "low",
-    },
-    {
-      name: "Apollo Speciality Clinic",
-      type: "Respiratory",
-      dept: "Pulmonology",
-      distance: "3.1 km",
-      wait: "85 mins",
-      match: 87,
-      load: "high",
-    },
-    {
-      name: "Fortis Medical Center",
-      type: "Multi-Specialty",
-      dept: "Internal Medicine",
-      distance: "4.2 km",
-      wait: "30 mins",
-      match: 82,
-      load: "low",
-    },
-  ];
+  useEffect(() => {
+    fetchHospitals();
+  }, []);
+
+  const fetchHospitals = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/api/hospitals");
+      const data = Array.isArray(res.data) ? res.data : [];
+      // Add calculated fields for display
+      const enriched = data.map((h: any, idx: number) => ({
+        ...h,
+        distance: `${(1.5 + idx * 0.7).toFixed(1)} km`,
+        wait: `${15 + idx * 10} mins`,
+        match: Math.max(70, 95 - idx * 5),
+        load: h.status === "LIMITED" ? "high" : h.gen_beds > 30 ? "low" : "medium",
+        dept: "General Medicine",
+        type: idx === 0 ? "Multi-Specialty" : idx < 3 ? "Primary Care" : "Specialty",
+      }));
+      setHospitals(enriched);
+    } catch (err) {
+      console.error("Failed to fetch hospitals:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBook = async (hospital: any) => {
+    try {
+      await API.post("/api/appointments", {
+        patient_name: "Priya Sharma",
+        department: "General Medicine",
+        hospital_id: hospital.id,
+        appointment_date: new Date().toISOString().split("T")[0],
+        appointment_time: "10:30 AM",
+        insurance: "PM-JAY",
+        priority: "NORMAL",
+      });
+      Alert.alert("Booked!", `Appointment booked at ${hospital.name}`, [
+        {
+          text: "View Appointment",
+          onPress: () => router.push("/dashboard/appointment"),
+        },
+        { text: "OK" },
+      ]);
+    } catch (err) {
+      console.error("Failed to book:", err);
+      Alert.alert("Error", "Could not book appointment");
+    }
+  };
+
+  const filtered = filter === "insurance"
+    ? hospitals.filter((h) => h.status !== "CLOSED")
+    : hospitals;
 
   return (
     <ScrollView style={styles.container}>
@@ -64,76 +86,101 @@ export default function FindHospitalScreen() {
 
       {/* FILTER */}
       <View style={styles.filterBar}>
-        <Text style={styles.activeFilter}>All Hospitals</Text>
-        <Text style={styles.inactiveFilter}>Insurance Compatible</Text>
+        <TouchableOpacity onPress={() => setFilter("all")}>
+          <Text
+            style={filter === "all" ? styles.activeFilter : styles.inactiveFilter}
+          >
+            All Hospitals
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setFilter("insurance")}>
+          <Text
+            style={
+              filter === "insurance" ? styles.activeFilter : styles.inactiveFilter
+            }
+          >
+            Insurance Compatible
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* HOSPITAL LIST */}
-      {hospitals.map((h, index) => (
-        <View key={index} style={styles.card}>
-          <View style={styles.rowBetween}>
-            <View>
-              <Text style={styles.name}>{h.name}</Text>
-              <Text style={styles.type}>{h.type}</Text>
-              <Text style={styles.dept}>{h.dept}</Text>
-            </View>
+      {loading ? (
+        <ActivityIndicator size="large" color="#1E88E5" style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          {/* HOSPITAL LIST */}
+          {filtered.map((h) => (
+            <View key={h.id} style={styles.card}>
+              <View style={styles.rowBetween}>
+                <View>
+                  <Text style={styles.name}>{h.name}</Text>
+                  <Text style={styles.type}>{h.type}</Text>
+                  <Text style={styles.dept}>
+                    {h.location} • Beds: {h.gen_beds ?? 0}
+                  </Text>
+                </View>
 
-            <View style={styles.matchBox}>
-              <Ionicons name="star" size={16} color="#fff" />
-              <Text style={styles.matchText}>{h.match}%</Text>
+                <View style={styles.matchBox}>
+                  <Ionicons name="star" size={16} color="#fff" />
+                  <Text style={styles.matchText}>{h.match}%</Text>
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <Text>📍 {h.distance}</Text>
+                <Text>⏱ {h.wait}</Text>
+              </View>
+
+              <View style={styles.row}>
+                <View style={styles.blueTag}>
+                  <Text style={{ color: "#1E88E5" }}>PM-JAY Compatible</Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.loadTag,
+                    h.load === "low"
+                      ? styles.low
+                      : h.load === "medium"
+                        ? styles.medium
+                        : styles.high,
+                  ]}
+                >
+                  <Text>
+                    {h.load === "low"
+                      ? "Low Load"
+                      : h.load === "medium"
+                        ? "Medium Load"
+                        : "High Load"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* MATCH + BUTTON */}
+              <View style={styles.bottomRow}>
+                <View style={styles.progress}>
+                  <View style={[styles.progressFill, { width: `${h.match}%` }]} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.bookBtn}
+                  onPress={() => handleBook(h)}
+                >
+                  <Text style={{ color: "#fff" }}>Book</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          ))}
+
+          {/* INFO */}
+          <View style={styles.infoBox}>
+            <Text>
+              💡 Smart Matching: Hospitals ranked using AI based on symptoms,
+              insurance, distance & load.
+            </Text>
           </View>
-
-          <View style={styles.row}>
-            <Text>📍 {h.distance}</Text>
-            <Text>⏱ {h.wait}</Text>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.blueTag}>
-              <Text style={{ color: "#1E88E5" }}>PM-JAY Compatible</Text>
-            </View>
-
-            <View
-              style={[
-                styles.loadTag,
-                h.load === "low"
-                  ? styles.low
-                  : h.load === "medium"
-                    ? styles.medium
-                    : styles.high,
-              ]}
-            >
-              <Text>
-                {h.load === "low"
-                  ? "Low Load"
-                  : h.load === "medium"
-                    ? "Medium Load"
-                    : "High Load"}
-              </Text>
-            </View>
-          </View>
-
-          {/* MATCH + BUTTON */}
-          <View style={styles.bottomRow}>
-            <View style={styles.progress}>
-              <View style={[styles.progressFill, { width: `${h.match}%` }]} />
-            </View>
-
-            <TouchableOpacity style={styles.bookBtn}>
-              <Text style={{ color: "#fff" }}>Book</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
-
-      {/* INFO */}
-      <View style={styles.infoBox}>
-        <Text>
-          💡 Smart Matching: Hospitals ranked using AI based on symptoms,
-          insurance, distance & load.
-        </Text>
-      </View>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -169,6 +216,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     padding: 10,
     borderRadius: 20,
+    overflow: "hidden",
   },
 
   inactiveFilter: {
@@ -176,6 +224,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     padding: 10,
     borderRadius: 20,
+    overflow: "hidden",
   },
 
   card: {
