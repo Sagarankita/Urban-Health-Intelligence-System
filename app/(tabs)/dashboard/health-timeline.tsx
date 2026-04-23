@@ -1,6 +1,7 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     ScrollView,
     StyleSheet,
@@ -8,9 +9,47 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import API from "../../../services/api";
 
 export default function HealthTimelineScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.name) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const [rRes, aRes] = await Promise.all([
+          API.get("/api/reports", {
+            params: { patient_name: user.name, limit: 10 },
+          }),
+          API.get("/api/appointments", {
+            params: { patient_name: user.name, limit: 10 },
+          }),
+        ]);
+        setReports(Array.isArray(rRes.data) ? rRes.data : []);
+        setAppointments(Array.isArray(aRes.data) ? aRes.data : []);
+      } catch (e) {
+        console.error("Failed to load timeline data", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user?.name]);
+
+  const totalReports = reports.length;
+  const avgRisk = reports.length
+    ? Math.round(
+        reports.reduce((s, r) => s + (r.severity ?? 50), 0) / reports.length,
+      )
+    : null;
 
   return (
     <ScrollView style={styles.container}>
@@ -46,63 +85,60 @@ export default function HealthTimelineScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Ionicons name="pulse" size={20} color="#1E88E5" />
-          <Text style={styles.statTitle}>Avg Risk Score</Text>
-          <Text style={styles.statValue}>42</Text>
-          <Text style={{ color: "green" }}>Improving trend</Text>
+          <Text style={styles.statTitle}>Avg Severity</Text>
+          <Text style={styles.statValue}>{avgRisk ?? "–"}</Text>
+          <Text style={{ color: avgRisk && avgRisk < 50 ? "green" : "orange" }}>
+            {avgRisk
+              ? avgRisk < 50
+                ? "Low range"
+                : "Monitor closely"
+              : "No reports yet"}
+          </Text>
         </View>
 
         <View style={styles.statCard}>
           <Ionicons name="calendar" size={20} color="#1E88E5" />
-          <Text style={styles.statTitle}>Check-ups</Text>
-          <Text style={styles.statValue}>12</Text>
-          <Text>This year</Text>
+          <Text style={styles.statTitle}>Appointments</Text>
+          <Text style={styles.statValue}>{appointments.length}</Text>
+          <Text>Total booked</Text>
         </View>
       </View>
 
       {/* RECENT ACTIVITY */}
       <Text style={styles.sectionTitle}>Recent Activity</Text>
 
-      <TimelineItem
-        icon="calendar"
-        title="Appointment Confirmed"
-        desc="City General Hospital - Respiratory Medicine"
-        time="Today, 9:45 AM"
-      />
+      {loading && (
+        <Text style={{ textAlign: "center", margin: 20, color: "#6b7280" }}>
+          Loading...
+        </Text>
+      )}
 
-      <TimelineItem
-        icon="pulse"
-        title="Symptom Report Submitted"
-        desc="Fever, Cough, Headache • Risk Score: 78/100"
-        time="Today, 9:30 AM"
-      />
+      {!loading && reports.length === 0 && appointments.length === 0 && (
+        <Text style={{ textAlign: "center", margin: 20, color: "#6b7280" }}>
+          No activity yet. Report symptoms or book an appointment to get
+          started.
+        </Text>
+      )}
 
-      <TimelineItem
-        icon="notifications"
-        title="Health Advisory Received"
-        desc="Seasonal flu alert in your ward"
-        time="Yesterday, 8:00 AM"
-      />
+      {appointments.map((a: any) => (
+        <TimelineItem
+          key={`appt-${a.id}`}
+          icon="calendar"
+          title={`Appointment – ${a.status}`}
+          desc={`${a.department} • Hospital #${a.hospital_id}`}
+          time={`${a.appointment_date} ${a.appointment_time}`}
+        />
+      ))}
 
-      <TimelineItem
-        icon="heart"
-        title="Routine Health Check"
-        desc="BP Normal • Sugar Normal"
-        time="Feb 20, 2026"
-      />
-
-      <TimelineItem
-        icon="document-text"
-        title="Lab Report Available"
-        desc="All parameters normal"
-        time="Feb 15, 2026"
-      />
-
-      <TimelineItem
-        icon="calendar"
-        title="Follow-up Consultation"
-        desc="Metro Health Center"
-        time="Feb 10, 2026"
-      />
+      {reports.map((r: any) => (
+        <TimelineItem
+          key={`rep-${r.id}`}
+          icon="pulse"
+          title={`Symptom Report – ${r.risk ?? "Analyzed"}`}
+          desc={`Severity: ${r.severity}/100 • ${r.recommendation ?? ""}`}
+          time={new Date(r.created_at).toLocaleString()}
+        />
+      ))}
 
       {/* ALERTS */}
       <Text style={styles.sectionTitle}>Health Alerts & Advisories</Text>

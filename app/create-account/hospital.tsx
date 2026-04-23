@@ -1,14 +1,14 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function HospitalRegister() {
@@ -140,9 +140,7 @@ export default function HospitalRegister() {
                 value={form.confirm}
                 onChangeText={(t) => setForm({ ...form, confirm: t })}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirm(!showConfirm)}
-              >
+              <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
                 <Ionicons name={showConfirm ? "eye-off" : "eye"} size={20} />
               </TouchableOpacity>
             </View>
@@ -153,9 +151,37 @@ export default function HospitalRegister() {
       {/* BUTTON */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-          if (step === 1) setStep(2);
-          else alert("Hospital Account Created!");
+        onPress={async () => {
+          if (step === 1) {
+            if (!form.name || !form.address) {
+              alert("Please fill in all required fields");
+              return;
+            }
+            setStep(2);
+          } else {
+            if (!form.password || form.password.length < 6) {
+              alert("Password must be at least 6 characters");
+              return;
+            }
+            if (form.password !== form.confirm) {
+              alert("Passwords do not match");
+              return;
+            }
+            try {
+              await API.post("/api/auth/register", {
+                name: form.name,
+                email: form.email,
+                password: form.password,
+                role: "HOSPITAL",
+                ward: form.ward,
+              });
+              alert("Hospital account created! Please login.");
+              router.replace("/login");
+            } catch (err: any) {
+              const msg = err?.response?.data?.error || "Registration failed";
+              alert(msg);
+            }
+          }
         }}
       >
         <Text style={styles.buttonText}>

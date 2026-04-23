@@ -1,20 +1,25 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function MunicipalDashboard() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [topSymptoms, setTopSymptoms] = useState<
+    { symptom: string; count: number }[]
+  >([]);
 
   useEffect(() => {
     fetchStats();
@@ -24,25 +29,42 @@ export default function MunicipalDashboard() {
     try {
       setLoading(true);
       // Fetch multiple endpoints in parallel
-      const [resourcesRes, reportsRes, outbreaksRes] = await Promise.allSettled([
-        API.get("/api/resources/municipal"),
-        API.get("/api/reports/summary"),
-        API.get("/api/outbreaks"),
-      ]);
+      const [resourcesRes, reportsRes, outbreaksRes, symptomsRes] =
+        await Promise.allSettled([
+          API.get("/api/resources/municipal"),
+          API.get("/api/reports/summary"),
+          API.get("/api/outbreaks"),
+          API.get("/api/reports/symptoms", { params: { limit: 5 } }),
+        ]);
+
+      const symptoms =
+        symptomsRes.status === "fulfilled" &&
+        Array.isArray(symptomsRes.value.data)
+          ? symptomsRes.value.data
+          : [];
+      setTopSymptoms(symptoms);
 
       const hospitals =
-        resourcesRes.status === "fulfilled" && Array.isArray(resourcesRes.value.data)
+        resourcesRes.status === "fulfilled" &&
+        Array.isArray(resourcesRes.value.data)
           ? resourcesRes.value.data
           : [];
       const reportSummary =
         reportsRes.status === "fulfilled" ? reportsRes.value.data : {};
       const outbreaks =
-        outbreaksRes.status === "fulfilled" && Array.isArray(outbreaksRes.value.data)
+        outbreaksRes.status === "fulfilled" &&
+        Array.isArray(outbreaksRes.value.data)
           ? outbreaksRes.value.data
           : [];
 
-      const totalBeds = hospitals.reduce((s: number, h: any) => s + (h.gen_beds || 0), 0);
-      const totalIcu = hospitals.reduce((s: number, h: any) => s + (h.icu_beds || 0), 0);
+      const totalBeds = hospitals.reduce(
+        (s: number, h: any) => s + (h.gen_beds || 0),
+        0,
+      );
+      const totalIcu = hospitals.reduce(
+        (s: number, h: any) => s + (h.icu_beds || 0),
+        0,
+      );
 
       const redZones = outbreaks.filter((o: any) => o.zone === "RED").length;
 
@@ -89,7 +111,10 @@ export default function MunicipalDashboard() {
           {/* RIGHT SIDE */}
           <TouchableOpacity
             style={styles.logout}
-            onPress={() => router.replace("/login")}
+            onPress={() => {
+              logout();
+              router.replace("/login");
+            }}
           >
             <Ionicons name="log-out-outline" size={22} color="#fff" />
           </TouchableOpacity>
@@ -97,7 +122,7 @@ export default function MunicipalDashboard() {
 
         <View style={styles.userCard}>
           <Text style={styles.logged}>Logged in as</Text>
-          <Text style={styles.name}>Dr. Rajesh Patil</Text>
+          <Text style={styles.name}>{user?.name}</Text>
           <Text style={styles.role}>Municipal Health Officer</Text>
         </View>
 
@@ -141,14 +166,24 @@ export default function MunicipalDashboard() {
               </View>
             </View>
 
-            {/* TOP SYMPTOMS — Fetched from outbreaks / heatmap data */}
-            <View style={styles.symptomCard}>
-              <Text style={styles.symptomTitle}>Top Symptoms Today</Text>
-
-              <SymptomRow name="Fever" value={78} />
-              <SymptomRow name="Cough" value={65} />
-              <SymptomRow name="Headache" value={52} />
-            </View>
+            {/* TOP SYMPTOMS — Live from DB */}
+            {topSymptoms.length > 0 && (
+              <View style={styles.symptomCard}>
+                <Text style={styles.symptomTitle}>Top Symptoms</Text>
+                {topSymptoms.map((s) => {
+                  const maxCount = topSymptoms[0]?.count || 1;
+                  const barValue = Math.round((s.count / maxCount) * 100);
+                  return (
+                    <SymptomRow
+                      key={s.symptom}
+                      name={s.symptom}
+                      value={barValue}
+                      count={s.count}
+                    />
+                  );
+                })}
+              </View>
+            )}
           </>
         )}
 
@@ -159,7 +194,7 @@ export default function MunicipalDashboard() {
           icon="map-outline"
           title="Ward Symptom Heatmap"
           subtitle="Symptom density by ward"
-          onPress={() => router.push("/municipal/heatmap")}
+          onPress={() => router.push("/(tabs)/municipal/heatmap")}
         />
         <ActionCard
           icon="warning-outline"
@@ -203,14 +238,14 @@ function StatBox({ title, value, color, sub }: any) {
   );
 }
 
-function SymptomRow({ name, value }: any) {
+function SymptomRow({ name, value, count }: any) {
   return (
     <View style={styles.symptomRow}>
       <Text style={styles.symptomText}>{name}</Text>
       <View style={styles.barContainer}>
         <View style={[styles.barFill, { width: `${value}%` }]} />
       </View>
-      <Text style={styles.symptomValue}>{value}</Text>
+      <Text style={styles.symptomValue}>{count ?? value}</Text>
     </View>
   );
 }

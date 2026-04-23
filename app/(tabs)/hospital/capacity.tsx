@@ -1,22 +1,23 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-
-const HOSPITAL_ID = 1;
 
 export default function CapacityScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id ?? 1;
 
   const [generalBeds, setGeneralBeds] = useState("0");
   const [icuBeds, setIcuBeds] = useState("0");
@@ -70,7 +71,12 @@ export default function CapacityScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color="#1E88E5" />
       </View>
     );

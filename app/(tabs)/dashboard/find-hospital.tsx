@@ -1,59 +1,69 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function FindHospitalScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHospitals();
   }, []);
 
-  const fetchHospitals = async () => {
+  const fetchHospitals = async (insuranceFilter?: string) => {
     try {
       setLoading(true);
-      const res = await API.get("/api/hospitals");
+      setFetchError(null);
+      const params: any = { limit: 15 };
+      if (insuranceFilter) params.insurance = insuranceFilter;
+      else if (user?.insurance) params.insurance = user.insurance;
+
+      const res = await API.get("/api/hospitals/recommend", { params });
       const data = Array.isArray(res.data) ? res.data : [];
-      // Add calculated fields for display
-      const enriched = data.map((h: any, idx: number) => ({
-        ...h,
-        distance: `${(1.5 + idx * 0.7).toFixed(1)} km`,
-        wait: `${15 + idx * 10} mins`,
-        match: Math.max(70, 95 - idx * 5),
-        load: h.status === "LIMITED" ? "high" : h.gen_beds > 30 ? "low" : "medium",
-        dept: "General Medicine",
-        type: idx === 0 ? "Multi-Specialty" : idx < 3 ? "Primary Care" : "Specialty",
-      }));
-      setHospitals(enriched);
-    } catch (err) {
+      setHospitals(data);
+      if (data.length === 0)
+        setFetchError("No hospitals found. Try a different filter.");
+    } catch (err: any) {
       console.error("Failed to fetch hospitals:", err);
+      setFetchError(
+        err?.message ?? "Could not load hospitals. Is the server running?",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleBook = async (hospital: any) => {
+    if (!hospital.hospital_id) {
+      Alert.alert(
+        "Not Available",
+        "This hospital cannot be booked online yet.",
+      );
+      return;
+    }
     try {
       await API.post("/api/appointments", {
-        patient_name: "Priya Sharma",
-        department: "General Medicine",
-        hospital_id: hospital.id,
+        patient_name: user?.name ?? "Patient",
+        department: hospital.department ?? "General Medicine",
+        hospital_id: hospital.hospital_id,
         appointment_date: new Date().toISOString().split("T")[0],
         appointment_time: "10:30 AM",
-        insurance: "PM-JAY",
+        insurance: user?.insurance ?? undefined,
         priority: "NORMAL",
       });
       Alert.alert("Booked!", `Appointment booked at ${hospital.name}`, [
@@ -69,15 +79,24 @@ export default function FindHospitalScreen() {
     }
   };
 
-  const filtered = filter === "insurance"
-    ? hospitals.filter((h) => h.status !== "CLOSED")
-    : hospitals;
+  const filtered =
+    filter === "insurance"
+      ? hospitals.filter((h) => {
+          const ins = (user?.insurance ?? "")
+            .toLowerCase()
+            .replace(/[-_\s]/g, "");
+          if (ins.includes("pmjay")) return h.accepts_pmjay;
+          if (ins.includes("abha")) return h.accepts_abha;
+          if (ins.includes("private")) return h.accepts_private_insurance;
+          return h.accepts_no_insurance;
+        })
+      : hospitals;
 
   return (
     <ScrollView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/dashboard")}>
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/dashboard")}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Find Hospital</Text>
@@ -88,7 +107,9 @@ export default function FindHospitalScreen() {
       <View style={styles.filterBar}>
         <TouchableOpacity onPress={() => setFilter("all")}>
           <Text
-            style={filter === "all" ? styles.activeFilter : styles.inactiveFilter}
+            style={
+              filter === "all" ? styles.activeFilter : styles.inactiveFilter
+            }
           >
             All Hospitals
           </Text>
@@ -96,7 +117,9 @@ export default function FindHospitalScreen() {
         <TouchableOpacity onPress={() => setFilter("insurance")}>
           <Text
             style={
-              filter === "insurance" ? styles.activeFilter : styles.inactiveFilter
+              filter === "insurance"
+                ? styles.activeFilter
+                : styles.inactiveFilter
             }
           >
             Insurance Compatible
@@ -105,72 +128,111 @@ export default function FindHospitalScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1E88E5" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          size="large"
+          color="#1E88E5"
+          style={{ marginTop: 40 }}
+        />
+      ) : fetchError ? (
+        <View style={styles.infoBox}>
+          <Text style={{ color: "#1e3a8a", textAlign: "center" }}>
+            {fetchError}
+          </Text>
+          <TouchableOpacity
+            onPress={() => fetchHospitals()}
+            style={{ marginTop: 12, alignItems: "center" }}
+          >
+            <Text style={{ color: "#1E88E5", fontWeight: "bold" }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <>
           {/* HOSPITAL LIST */}
-          {filtered.map((h) => (
-            <View key={h.id} style={styles.card}>
-              <View style={styles.rowBetween}>
-                <View>
-                  <Text style={styles.name}>{h.name}</Text>
-                  <Text style={styles.type}>{h.type}</Text>
-                  <Text style={styles.dept}>
-                    {h.location} • Beds: {h.gen_beds ?? 0}
-                  </Text>
+          {filtered.map((h, idx) => {
+            const load =
+              h.occupancy_percent >= 80
+                ? "high"
+                : h.occupancy_percent >= 50
+                  ? "medium"
+                  : "low";
+            const insuranceTags = [
+              h.accepts_pmjay && "PM-JAY",
+              h.accepts_abha && "ABHA",
+              h.accepts_private_insurance && "Private",
+              h.accepts_no_insurance && "No Insurance",
+            ].filter(Boolean);
+
+            return (
+              <View key={`${h.name}-${h.area}-${idx}`} style={styles.card}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.name}>{h.name}</Text>
+                    <Text style={styles.type}>{h.type}</Text>
+                    <Text style={styles.dept}>
+                      {h.area} • {h.department} • Beds: {h.available_beds}
+                    </Text>
+                  </View>
+
+                  <View style={styles.matchBox}>
+                    <Ionicons name="star" size={16} color="#fff" />
+                    <Text style={styles.matchText}>{h.match_score}%</Text>
+                  </View>
                 </View>
 
-                <View style={styles.matchBox}>
-                  <Ionicons name="star" size={16} color="#fff" />
-                  <Text style={styles.matchText}>{h.match}%</Text>
+                <View style={styles.row}>
+                  <Text>📍 {h.distance_km} km</Text>
+                  <Text>⏱ {h.wait_time_mins} mins</Text>
+                  <Text>⭐ {h.rating}</Text>
+                </View>
+
+                <View style={[styles.row, { flexWrap: "wrap", gap: 6 }]}>
+                  {insuranceTags.map((tag) => (
+                    <View key={tag} style={styles.blueTag}>
+                      <Text style={{ color: "#1E88E5", fontSize: 12 }}>
+                        {tag}
+                      </Text>
+                    </View>
+                  ))}
+                  <View
+                    style={[
+                      styles.loadTag,
+                      load === "low"
+                        ? styles.low
+                        : load === "medium"
+                          ? styles.medium
+                          : styles.high,
+                    ]}
+                  >
+                    <Text style={{ fontSize: 12 }}>
+                      {load === "low"
+                        ? "Low Load"
+                        : load === "medium"
+                          ? "Medium Load"
+                          : "High Load"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* MATCH BAR + BUTTON */}
+                <View style={styles.bottomRow}>
+                  <View style={styles.progress}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${h.match_score}%` },
+                      ]}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.bookBtn}
+                    onPress={() => handleBook(h)}
+                  >
+                    <Text style={{ color: "#fff" }}>Book</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <View style={styles.row}>
-                <Text>📍 {h.distance}</Text>
-                <Text>⏱ {h.wait}</Text>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.blueTag}>
-                  <Text style={{ color: "#1E88E5" }}>PM-JAY Compatible</Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.loadTag,
-                    h.load === "low"
-                      ? styles.low
-                      : h.load === "medium"
-                        ? styles.medium
-                        : styles.high,
-                  ]}
-                >
-                  <Text>
-                    {h.load === "low"
-                      ? "Low Load"
-                      : h.load === "medium"
-                        ? "Medium Load"
-                        : "High Load"}
-                  </Text>
-                </View>
-              </View>
-
-              {/* MATCH + BUTTON */}
-              <View style={styles.bottomRow}>
-                <View style={styles.progress}>
-                  <View style={[styles.progressFill, { width: `${h.match}%` }]} />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.bookBtn}
-                  onPress={() => handleBook(h)}
-                >
-                  <Text style={{ color: "#fff" }}>Book</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            );
+          })}
 
           {/* INFO */}
           <View style={styles.infoBox}>

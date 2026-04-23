@@ -1,18 +1,20 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ReportSymptoms() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const symptoms = [
     "Fever",
@@ -31,9 +33,12 @@ export default function ReportSymptoms() {
 
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [duration, setDuration] = useState("");
-  const [severity, setSeverity] = useState(50);
+  const [severity, setSeverity] = useState<number>(50);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<{
+    risk: string;
+    recommendation: string;
+  } | null>(null);
 
   const toggleSymptom = (symptom: string) => {
     if (selectedSymptoms.includes(symptom)) {
@@ -46,54 +51,77 @@ export default function ReportSymptoms() {
   const getRiskCardStyles = (risk: string) => {
     switch (risk?.toUpperCase()) {
       case "LOW":
-        return { backgroundColor: "#D1FAE5", borderLeftColor: "#10B981", textColor: "#047857" };
+        return {
+          backgroundColor: "#D1FAE5",
+          borderLeftColor: "#10B981",
+          textColor: "#047857",
+        };
       case "MEDIUM":
-        return { backgroundColor: "#FEF3C7", borderLeftColor: "#F59E0B", textColor: "#92400E" };
+        return {
+          backgroundColor: "#FEF3C7",
+          borderLeftColor: "#F59E0B",
+          textColor: "#92400E",
+        };
       case "HIGH":
-        return { backgroundColor: "#FED7AA", borderLeftColor: "#F97316", textColor: "#9A3412" };
+        return {
+          backgroundColor: "#FED7AA",
+          borderLeftColor: "#F97316",
+          textColor: "#9A3412",
+        };
       case "CRITICAL":
-        return { backgroundColor: "#FEE2E2", borderLeftColor: "#EF4444", textColor: "#991B1B" };
+        return {
+          backgroundColor: "#FEE2E2",
+          borderLeftColor: "#EF4444",
+          textColor: "#991B1B",
+        };
       default:
-        return { backgroundColor: "#F3F4F6", borderLeftColor: "#9CA3AF", textColor: "#374151" };
+        return {
+          backgroundColor: "#F3F4F6",
+          borderLeftColor: "#9CA3AF",
+          textColor: "#374151",
+        };
     }
   };
 
   const handleAnalyze = async () => {
-  if (selectedSymptoms.length === 0 || !duration) {
-    alert("Please select symptoms and duration");
-    return;
-  }
+    if (selectedSymptoms.length === 0 || !duration) {
+      alert("Please select symptoms and duration");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    const res = await API.post("/api/analyze", {
-      symptoms: selectedSymptoms,
-      duration,
-      severity,
-    });
-    console.log("FRONTEND RESPONSE:", res.data);
-    setResult(res.data);
-    router.push({
-      pathname: "/dashboard",
-      params: {
-        risk: res.data.risk,
-        recommendation: res.data.recommendation,
-      },
-    });
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      const res = await API.post("/api/analyze", {
+        symptoms: selectedSymptoms,
+        duration,
+        severity: Math.round(severity),
+        patient_name: user?.name ?? "Anonymous Patient",
+        ward: user?.ward ?? "Ward 23, Pune",
+        hospital_id: user?.hospital_id ?? null,
+      });
+      console.log("FRONTEND RESPONSE:", res.data);
+      setResult(res.data);
+      router.push({
+        pathname: "/(tabs)/dashboard",
+        params: {
+          risk: res.data.risk,
+          recommendation: res.data.recommendation,
+        },
+      } as any);
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
       {/* HEADER */}
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/dashboard")}>
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/dashboard")}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
 
@@ -107,7 +135,9 @@ export default function ReportSymptoms() {
 
       <View style={styles.locationRow}>
         <Ionicons name="location-outline" size={18} color="#1E88E5" />
-        <Text style={styles.locationText}>Location: Ward 23, Pune</Text>
+        <Text style={styles.locationText}>
+          Location: {user?.ward ?? "Ward 23, Pune"}
+        </Text>
       </View>
 
       {/* SYMPTOMS CARD */}
@@ -170,13 +200,17 @@ export default function ReportSymptoms() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Severity Level *</Text>
 
-        <Text style={styles.percent}>{severity}%</Text>
+        <Text style={styles.percent}>{Math.round(severity)}/100</Text>
 
         <Slider
-          minimumValue={0}
+          minimumValue={1}
           maximumValue={100}
+          step={1}
           value={severity}
-          onValueChange={setSeverity}
+          onValueChange={(v) => setSeverity(Math.round(v))}
+          minimumTrackTintColor="#1E88E5"
+          maximumTrackTintColor="#ddd"
+          thumbTintColor="#0E2A4E"
         />
 
         <View style={styles.severityLabels}>
@@ -190,17 +224,45 @@ export default function ReportSymptoms() {
 
       <TouchableOpacity style={styles.analyzeBtn} onPress={handleAnalyze}>
         <Ionicons name="sparkles-outline" size={20} color="#6b7280" />
-        <Text style={styles.analyzeText}>{loading ? "Analyzing..." : "Analyze with AI"}</Text>
+        <Text style={styles.analyzeText}>
+          {loading ? "Analyzing..." : "Analyze with AI"}
+        </Text>
       </TouchableOpacity>
       {/* RESULT */}
-{result && result.risk && (
-  <View style={[styles.card, { backgroundColor: getRiskCardStyles(result.risk).backgroundColor, borderLeftWidth: 4, borderLeftColor: getRiskCardStyles(result.risk).borderLeftColor }]}>
-    <Text style={[styles.cardTitle, { color: getRiskCardStyles(result.risk).textColor }]}>Result</Text>
-    <Text style={{ color: getRiskCardStyles(result.risk).textColor, fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Risk: {result.risk}</Text>
-    <Text style={{ color: getRiskCardStyles(result.risk).textColor }}>Advice: {result.recommendation}</Text>
-  </View>
-)}
-
+      {result && result.risk && (
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: getRiskCardStyles(result.risk).backgroundColor,
+              borderLeftWidth: 4,
+              borderLeftColor: getRiskCardStyles(result.risk).borderLeftColor,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: getRiskCardStyles(result.risk).textColor },
+            ]}
+          >
+            Result
+          </Text>
+          <Text
+            style={{
+              color: getRiskCardStyles(result.risk).textColor,
+              fontSize: 16,
+              fontWeight: "600",
+              marginBottom: 8,
+            }}
+          >
+            Risk: {result.risk}
+          </Text>
+          <Text style={{ color: getRiskCardStyles(result.risk).textColor }}>
+            Advice: {result.recommendation}
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }

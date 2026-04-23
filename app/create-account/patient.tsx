@@ -1,20 +1,21 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function PatientRegister() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -24,10 +25,37 @@ export default function PatientRegister() {
     gender: "Male",
     phone: "",
     email: "",
-    ward: "",
     password: "",
     confirm: "",
   });
+
+  const [cities, setCities] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+  const [selectedCity, setSelectedCity] = useState<any>(null);
+  const [selectedWard, setSelectedWard] = useState<any>(null);
+  const [picker, setPicker] = useState<null | "CITY" | "WARD">(null);
+
+  useEffect(() => {
+    API.get("/api/geo/cities", { params: { state: "Maharashtra" } })
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setCities(list);
+        const pune =
+          list.find((c: any) => c.name === "Pune") || list[0] || null;
+        setSelectedCity(pune);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCity?.id) return;
+    API.get(`/api/geo/cities/${selectedCity.id}/wards`)
+      .then((r) => {
+        setWards(Array.isArray(r.data) ? r.data : []);
+        setSelectedWard(null);
+      })
+      .catch(() => {});
+  }, [selectedCity?.id]);
 
   return (
     <ScrollView style={styles.container}>
@@ -87,7 +115,27 @@ export default function PatientRegister() {
 
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Gender *</Text>
-                <TextInput style={styles.input} value={form.gender} />
+                <View style={styles.genderRow}>
+                  {["Male", "Female", "Other"].map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      style={[
+                        styles.genderBtn,
+                        form.gender === g && styles.genderBtnActive,
+                      ]}
+                      onPress={() => setForm({ ...form, gender: g })}
+                    >
+                      <Text
+                        style={[
+                          styles.genderText,
+                          form.gender === g && styles.genderTextActive,
+                        ]}
+                      >
+                        {g}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
 
@@ -110,14 +158,44 @@ export default function PatientRegister() {
               onChangeText={(t) => setForm({ ...form, email: t })}
             />
 
+            {/* CITY */}
+            <Text style={styles.label}>City *</Text>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                {
+                  justifyContent: "space-between",
+                  flexDirection: "row",
+                  alignItems: "center",
+                },
+              ]}
+              onPress={() => setPicker("CITY")}
+            >
+              <Text style={{ color: selectedCity ? "#1f2937" : "#9ca3af" }}>
+                {selectedCity?.name || "Select City"}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#6b7280" />
+            </TouchableOpacity>
+
             {/* WARD */}
             <Text style={styles.label}>Ward / Area *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your area"
-              value={form.ward}
-              onChangeText={(t) => setForm({ ...form, ward: t })}
-            />
+            <TouchableOpacity
+              style={[
+                styles.input,
+                {
+                  justifyContent: "space-between",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  opacity: selectedCity ? 1 : 0.5,
+                },
+              ]}
+              onPress={() => selectedCity && setPicker("WARD")}
+            >
+              <Text style={{ color: selectedWard ? "#1f2937" : "#9ca3af" }}>
+                {selectedWard?.name || "Select Ward"}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#6b7280" />
+            </TouchableOpacity>
           </>
         ) : (
           <>
@@ -150,9 +228,7 @@ export default function PatientRegister() {
                 value={form.confirm}
                 onChangeText={(t) => setForm({ ...form, confirm: t })}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirm(!showConfirm)}
-              >
+              <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
                 <Ionicons name={showConfirm ? "eye-off" : "eye"} size={20} />
               </TouchableOpacity>
             </View>
@@ -163,15 +239,102 @@ export default function PatientRegister() {
       {/* BUTTON */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-          if (step === 1) setStep(2);
-          else alert("Account Created Successfully!");
+        onPress={async () => {
+          if (step === 1) {
+            if (!form.name || !form.email || !form.phone || !selectedWard) {
+              alert("Please fill in all required fields including ward");
+              return;
+            }
+            setStep(2);
+          } else {
+            if (!form.password || form.password.length < 6) {
+              alert("Password must be at least 6 characters");
+              return;
+            }
+            if (form.password !== form.confirm) {
+              alert("Passwords do not match");
+              return;
+            }
+            try {
+              await API.post("/api/auth/register", {
+                name: form.name,
+                email: form.email,
+                password: form.password,
+                role: "PATIENT",
+                phone: form.phone,
+                ward: selectedWard?.name ?? "",
+                age: form.age,
+                gender: form.gender,
+              });
+              alert("Account created! Please login.");
+              router.replace("/login");
+            } catch (err: any) {
+              const msg = err?.response?.data?.error || "Registration failed";
+              alert(msg);
+            }
+          }
         }}
       >
         <Text style={styles.buttonText}>
           {step === 1 ? "Review Details" : "Create Account"}
         </Text>
       </TouchableOpacity>
+
+      {/* CITY / WARD PICKER MODAL */}
+      <Modal
+        visible={picker !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPicker(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                {picker === "CITY" ? "Select City" : "Select Ward"}
+              </Text>
+              <TouchableOpacity onPress={() => setPicker(null)}>
+                <Ionicons name="close" size={22} color="#374151" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={picker === "CITY" ? cities : wards}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.pickItem}
+                  onPress={() => {
+                    if (picker === "CITY") {
+                      setSelectedCity(item);
+                      setSelectedWard(null);
+                    } else setSelectedWard(item);
+                    setPicker(null);
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontWeight:
+                        (picker === "CITY"
+                          ? selectedCity?.id
+                          : selectedWard?.id) === item.id
+                          ? "bold"
+                          : "normal",
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -278,5 +441,56 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+
+  genderRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+
+  genderBtn: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#f9fafb",
+  },
+
+  genderBtnActive: {
+    borderColor: "#1E88E5",
+    backgroundColor: "#EBF5FF",
+  },
+
+  genderText: {
+    fontSize: 13,
+    color: "#374151",
+  },
+
+  genderTextActive: {
+    color: "#1E88E5",
+    fontWeight: "600",
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+
+  modalSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "60%",
+  },
+
+  pickItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
   },
 });

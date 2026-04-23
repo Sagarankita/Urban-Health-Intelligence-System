@@ -1,22 +1,23 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-
-const HOSPITAL_ID = 1;
 
 export default function AppointmentManagement() {
   const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id ?? 1;
   const [search, setSearch] = useState("");
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export default function AppointmentManagement() {
   const handleStatusUpdate = async (
     id: number,
     status: string,
-    extra?: any
+    extra?: any,
   ) => {
     try {
       setActionLoading(id);
@@ -58,14 +59,14 @@ export default function AppointmentManagement() {
   };
 
   const filtered = appointments.filter((item) =>
-    item.patient_name?.toLowerCase().includes(search.toLowerCase())
+    item.patient_name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const pendingCount = appointments.filter(
-    (a) => a.status === "PENDING"
+    (a) => a.status === "PENDING",
   ).length;
   const approvedCount = appointments.filter(
-    (a) => a.status === "APPROVED"
+    (a) => a.status === "APPROVED",
   ).length;
 
   const formatDate = (dateStr: string, timeStr: string) => {
@@ -187,9 +188,7 @@ export default function AppointmentManagement() {
                   <TouchableOpacity
                     style={styles.rescheduleBtn}
                     disabled={actionLoading === item.id}
-                    onPress={() =>
-                      handleStatusUpdate(item.id, "RESCHEDULED")
-                    }
+                    onPress={() => handleStatusUpdate(item.id, "RESCHEDULED")}
                   >
                     <Text style={styles.btnText}>Reschedule</Text>
                   </TouchableOpacity>
@@ -197,9 +196,7 @@ export default function AppointmentManagement() {
                   <TouchableOpacity
                     style={styles.cancelBtn}
                     disabled={actionLoading === item.id}
-                    onPress={() =>
-                      handleStatusUpdate(item.id, "CANCELLED")
-                    }
+                    onPress={() => handleStatusUpdate(item.id, "CANCELLED")}
                   >
                     <Text style={styles.btnText}>Cancel</Text>
                   </TouchableOpacity>

@@ -1,14 +1,15 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
-  FlatList,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import API from "../../../services/api";
 
@@ -16,7 +17,16 @@ type City = { id: number; state: string; name: string };
 type Ward = { id: number; city_id: number; name: string };
 export default function Dashboard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [result, setResult] = React.useState<any>(null);
+  const [dbRisk, setDbRisk] = React.useState<string | null>(null);
+  const [dbRecommendation, setDbRecommendation] = React.useState<string | null>(
+    null,
+  );
+  const [isCritical, setIsCritical] = React.useState(false);
+  const [recommendationMessage, setRecommendationMessage] = React.useState<
+    string | null
+  >(null);
   const { risk, recommendation } = useLocalSearchParams();
   const [advisories, setAdvisories] = React.useState<any[]>([]);
   const [advisoryError, setAdvisoryError] = React.useState<string | null>(null);
@@ -25,7 +35,9 @@ export default function Dashboard() {
   const [wards, setWards] = React.useState<Ward[]>([]);
   const [selectedCity, setSelectedCity] = React.useState<City | null>(null);
   const [selectedWard, setSelectedWard] = React.useState<Ward | null>(null); // null => all wards in city
-  const [pickerOpen, setPickerOpen] = React.useState<null | "CITY" | "WARD">(null);
+  const [pickerOpen, setPickerOpen] = React.useState<null | "CITY" | "WARD">(
+    null,
+  );
 
   const locationLabel = selectedWard?.name
     ? `${selectedWard.name}, ${selectedCity?.name || ""}`.trim()
@@ -34,13 +46,38 @@ export default function Dashboard() {
       : "Select City";
 
   React.useEffect(() => {
+    const fetchLatestRisk = async () => {
+      const name = user?.name;
+      if (!name) return;
+      try {
+        const res = await API.get("/api/reports", {
+          params: { patient_name: name, limit: 1 },
+        });
+        const rows = Array.isArray(res.data) ? res.data : [];
+        if (rows.length > 0) {
+          setDbRisk(rows[0].risk);
+          setDbRecommendation(rows[0].recommendation);
+          setIsCritical(rows[0].is_critical === true);
+          setRecommendationMessage(rows[0].recommendation_message ?? null);
+        }
+      } catch (e) {
+        console.log("Could not fetch latest risk", e);
+      }
+    };
+    fetchLatestRisk();
+  }, [user?.name]);
+
+  React.useEffect(() => {
     const loadCities = async () => {
       try {
-        const resp = await API.get("/api/geo/cities", { params: { state: "Maharashtra" } });
+        const resp = await API.get("/api/geo/cities", {
+          params: { state: "Maharashtra" },
+        });
         const list = Array.isArray(resp.data) ? resp.data : [];
         setCities(list);
         // Default to Pune if present, else first city.
-        const pune = list.find((c: any) => c.name === "Pune") || list[0] || null;
+        const pune =
+          list.find((c: any) => c.name === "Pune") || list[0] || null;
         setSelectedCity(pune);
       } catch (e) {
         console.error("Failed to load cities", e);
@@ -87,51 +124,52 @@ export default function Dashboard() {
     };
     loadAdvisories();
   }, [selectedCity?.id, selectedWard?.id]);
-  
+
   const getRiskStyle = (risk: string) => {
-  switch (risk) {
-    case "Severe":
-      return styles.severeRisk;
-    case "Moderate":
-      return styles.moderateRisk;
-    default:
-      return styles.lowRisk;
-  }
-};
-const getRiskUI = (risk: string) => {
-  switch (risk) {
-    case "Severe":
-      return {
-        bg: "#FEE2E2",
-        iconBg: "#DC2626",
-        textColor: "#DC2626",
-        icon: "warning",
-      };
-    case "Moderate":
-      return {
-        bg: "#FEF3C7",
-        iconBg: "#F59E0B",
-        textColor: "#F59E0B",
-        icon: "alert-circle",
-      };
-    default:
-      return {
-        bg: "#E6F4EA",
-        iconBg: "#16A34A",
-        textColor: "#15803D",
-        icon: "checkmark-circle",
-      };
-  }
-};
-const riskValue = (risk as string) || "Low";
-const riskUI = getRiskUI(riskValue);
+    switch (risk) {
+      case "Severe":
+        return styles.severeRisk;
+      case "Moderate":
+        return styles.moderateRisk;
+      default:
+        return styles.lowRisk;
+    }
+  };
+  const getRiskUI = (risk: string) => {
+    switch (risk) {
+      case "Severe":
+        return {
+          bg: "#FEE2E2",
+          iconBg: "#DC2626",
+          textColor: "#DC2626",
+          icon: "warning",
+        };
+      case "Moderate":
+        return {
+          bg: "#FEF3C7",
+          iconBg: "#F59E0B",
+          textColor: "#F59E0B",
+          icon: "alert-circle",
+        };
+      default:
+        return {
+          bg: "#E6F4EA",
+          iconBg: "#16A34A",
+          textColor: "#15803D",
+          icon: "checkmark-circle",
+        };
+    }
+  };
+  const riskValue = (risk as string) || dbRisk || "Low";
+  const recValue = (recommendation as string) || dbRecommendation || "";
+  const riskUI = getRiskUI(riskValue);
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcome}>Welcome back,</Text>
-          <Text style={styles.name}>Priya Sharma</Text>
+          <Text style={styles.name}>{user?.name ?? "Patient"}</Text>
           <Text style={styles.location}>{locationLabel}</Text>
         </View>
 
@@ -143,25 +181,49 @@ const riskUI = getRiskUI(riskValue);
         </TouchableOpacity>
       </View>
 
+      {/* CRITICAL ALERT BANNER */}
+      {isCritical && (
+        <View style={styles.criticalBanner}>
+          <Ionicons name="warning" size={22} color="#fff" />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.criticalBannerTitle}>⚠ CRITICAL STATUS</Text>
+            <Text style={styles.criticalBannerSub}>
+              Your hospital has marked you as critical. Please visit
+              immediately.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* HOSPITAL RECOMMENDATION MESSAGE */}
+      {!!recommendationMessage && (
+        <View style={styles.recommendCard}>
+          <Ionicons name="medkit" size={20} color="#1E40AF" />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.recommendTitle}>Hospital Recommendation</Text>
+            <Text style={styles.recommendDesc}>{recommendationMessage}</Text>
+          </View>
+        </View>
+      )}
+
       {/* RISK CARD */}
       <View style={[styles.riskCard, { backgroundColor: riskUI.bg }]}>
-  <View style={[styles.riskIcon, { backgroundColor: riskUI.iconBg }]}>
-    <Ionicons name={riskUI.icon as any} size={20} color="#fff" />
-  </View>
+        <View style={[styles.riskIcon, { backgroundColor: riskUI.iconBg }]}>
+          <Ionicons name={riskUI.icon as any} size={20} color="#fff" />
+        </View>
 
-  <View style={{ flex: 1 }}>
-    <Text style={styles.riskTitle}>Current AI Risk Level</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.riskTitle}>Current AI Risk Level</Text>
 
-    <Text style={[styles.riskValue, { color: riskUI.textColor }]}>
-      {`${riskValue} Risk`}
-    </Text>
+          <Text style={[styles.riskValue, { color: riskUI.textColor }]}>
+            {`${riskValue} Risk`}
+          </Text>
 
-    <Text style={styles.riskDesc}>
-      {recommendation ||
-        "No recent symptom reports • You're doing great!"}
-    </Text>
-  </View>
-</View>
+          <Text style={styles.riskDesc}>
+            {recValue || "No recent symptom reports • You're doing great!"}
+          </Text>
+        </View>
+      </View>
 
       {/* QUICK ACTIONS */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -203,7 +265,9 @@ const riskUI = getRiskUI(riskValue);
             onPress={() => setPickerOpen("CITY")}
           >
             <Text style={styles.alertTitle}>
-              {selectedCity?.name ? `City: ${selectedCity.name}` : "Select City"}
+              {selectedCity?.name
+                ? `City: ${selectedCity.name}`
+                : "Select City"}
             </Text>
             <Text style={styles.alertDesc}>Tap to change city</Text>
           </TouchableOpacity>
@@ -213,7 +277,9 @@ const riskUI = getRiskUI(riskValue);
             disabled={!selectedCity}
           >
             <Text style={styles.alertTitle}>
-              {selectedWard?.name ? `Ward: ${selectedWard.name}` : "Ward: All wards"}
+              {selectedWard?.name
+                ? `Ward: ${selectedWard.name}`
+                : "Ward: All wards"}
             </Text>
             <Text style={styles.alertDesc}>Tap to change ward</Text>
           </TouchableOpacity>
@@ -229,7 +295,8 @@ const riskUI = getRiskUI(riskValue);
         <View style={styles.simpleCard}>
           <Text style={styles.alertTitle}>No advisories right now</Text>
           <Text style={styles.alertDesc}>
-            If your municipal authority sends an advisory for your selected area, it will show here.
+            If your municipal authority sends an advisory for your selected
+            area, it will show here.
           </Text>
         </View>
       ) : (
@@ -273,7 +340,12 @@ const riskUI = getRiskUI(riskValue);
                       setPickerOpen(null);
                     }}
                   >
-                    <Text style={{ fontWeight: selectedCity?.id === item.id ? "bold" : "normal" }}>
+                    <Text
+                      style={{
+                        fontWeight:
+                          selectedCity?.id === item.id ? "bold" : "normal",
+                      }}
+                    >
                       {item.name}
                     </Text>
                   </TouchableOpacity>
@@ -281,7 +353,14 @@ const riskUI = getRiskUI(riskValue);
               />
             ) : (
               <FlatList
-                data={[{ id: -1, city_id: selectedCity?.id ?? 0, name: "All wards" } as any, ...wards]}
+                data={[
+                  {
+                    id: -1,
+                    city_id: selectedCity?.id ?? 0,
+                    name: "All wards",
+                  } as any,
+                  ...wards,
+                ]}
                 keyExtractor={(w) => String(w.id)}
                 renderItem={({ item }) => (
                   <TouchableOpacity
@@ -295,7 +374,8 @@ const riskUI = getRiskUI(riskValue);
                     <Text
                       style={{
                         fontWeight:
-                          (item.id === -1 && !selectedWard) || selectedWard?.id === item.id
+                          (item.id === -1 && !selectedWard) ||
+                          selectedWard?.id === item.id
                             ? "bold"
                             : "normal",
                       }}
@@ -377,10 +457,10 @@ const styles = StyleSheet.create({
   },
 
   riskValue: {
-  fontSize: 20,
-  fontWeight: "bold",
-  marginTop: 4,
-},
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 4,
+  },
 
   riskIcon: {
     backgroundColor: "#16A34A",
@@ -398,18 +478,18 @@ const styles = StyleSheet.create({
   },
 
   moderateRisk: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "#F59E0B",
-  marginTop: 4,
-},
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#F59E0B",
+    marginTop: 4,
+  },
 
-severeRisk: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "#DC2626",
-  marginTop: 4,
-},
+  severeRisk: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#DC2626",
+    marginTop: 4,
+  },
 
   riskDesc: { fontSize: 13, marginTop: 4 },
 
@@ -533,5 +613,59 @@ severeRisk: {
     flexDirection: "row",
     alignItems: "center",
     elevation: 2,
+  },
+
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  criticalBanner: {
+    backgroundColor: "#DC2626",
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 4,
+    padding: 14,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  criticalBannerTitle: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+
+  criticalBannerSub: {
+    color: "#fecaca",
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  recommendCard: {
+    backgroundColor: "#EFF6FF",
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 4,
+    padding: 14,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderLeftWidth: 4,
+    borderLeftColor: "#1E40AF",
+  },
+
+  recommendTitle: {
+    fontWeight: "bold",
+    color: "#1E40AF",
+    fontSize: 14,
+  },
+
+  recommendDesc: {
+    color: "#1e3a8a",
+    fontSize: 13,
+    marginTop: 3,
   },
 });

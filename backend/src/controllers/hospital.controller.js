@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { getRecommendations } from "../services/hospital_recommend.js";
 
 /**
  * GET /api/hospitals
@@ -38,7 +39,7 @@ export const getHospital = async (req, res) => {
       FROM hospitals h
       LEFT JOIN resources r ON h.id = r.hospital_id
       WHERE h.id = $1`,
-      [id]
+      [id],
     );
 
     if (result.rowCount === 0)
@@ -70,23 +71,23 @@ export const getHospitalStats = async (req, res) => {
             COUNT(*) FILTER (WHERE appointment_date = CURRENT_DATE AND status = 'PENDING') AS today_pending,
             COUNT(*) FILTER (WHERE appointment_date = CURRENT_DATE AND status = 'APPROVED') AS today_approved
           FROM appointments WHERE hospital_id = $1`,
-          [hospitalId]
+          [hospitalId],
         ),
         pool.query(
           `SELECT
             COUNT(*) FILTER (WHERE status = 'NEW') AS new_reports,
             COUNT(*) AS total_reports
           FROM reports WHERE hospital_id = $1`,
-          [hospitalId]
+          [hospitalId],
         ),
         pool.query(
           `SELECT gen_beds, icu_beds, ventilators, status
           FROM resources WHERE hospital_id = $1`,
-          [hospitalId]
+          [hospitalId],
         ),
         pool.query(
           `SELECT COUNT(*) AS total_doctors FROM doctors WHERE hospital_id = $1`,
-          [hospitalId]
+          [hospitalId],
         ),
       ]);
 
@@ -126,11 +127,76 @@ export const listDoctors = async (req, res) => {
     const result = await pool.query(
       `SELECT id, name, department, specialization, available
        FROM doctors WHERE hospital_id = $1 ORDER BY department, name`,
-      [hospitalId]
+      [hospitalId],
     );
     res.json(result.rows);
   } catch (e) {
     console.error("listDoctors error:", e);
     res.status(500).json({ error: "Failed to list doctors" });
+  }
+};
+
+/**
+ * GET /api/hospitals/recommend?insurance=PM-JAY&limit=10
+ * Returns top hospitals ranked by AI model using CSV data.
+ */
+export const getRecommendedHospitals = async (req, res) => {
+  try {
+    const { insurance, limit } = req.query;
+    const results = getRecommendations({
+      insurance,
+      limit: Number(limit) || 10,
+    });
+
+    // Attach DB hospital_id by matching on name (exact → word-overlap fallback)
+    const dbRes = await pool.query(`SELECT id, name FROM hospitals`);
+    const dbHospitals = dbRes.rows;
+
+    const COMMON = new Set([
+      "hospital",
+      "medical",
+      "centre",
+      "center",
+      "general",
+      "district",
+      "city",
+    ]);
+
+    const findId = (csvName, idx) => {
+      const lower = csvName.toLowerCase();
+      const exact = dbHospitals.find((r) => r.name.toLowerCase() === lower);
+      if (exact) return exact.id;
+      // word overlap ignoring common words
+      const csvWords = lower
+        .split(/\s+/)
+        .filter((w) => w.length > 3 && !COMMON.has(w));
+      let best = null,
+        bestCount = 0;
+      for (const db of dbHospitals) {
+        const dbWords = db.name
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 3 && !COMMON.has(w));
+        const overlap = dbWords.filter((w) => csvWords.includes(w)).length;
+        if (overlap > bestCount) {
+          bestCount = overlap;
+          best = db;
+        }
+      }
+      // fallback: distribute across DB hospitals so all are bookable
+      return best
+        ? best.id
+        : (dbHospitals[idx % dbHospitals.length]?.id ?? null);
+    };
+
+    const enriched = results.map((h, idx) => ({
+      ...h,
+      hospital_id: findId(h.name, idx),
+    }));
+
+    res.json(enriched);
+  } catch (e) {
+    console.error("getRecommendedHospitals error:", e);
+    res.status(500).json({ error: "Failed to get recommendations" });
   }
 };

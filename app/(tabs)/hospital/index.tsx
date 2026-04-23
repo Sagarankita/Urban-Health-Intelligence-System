@@ -1,22 +1,24 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 // Default hospital ID (City General Hospital)
-const HOSPITAL_ID = 1;
 
 export default function HospitalDashboard() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id ?? 1;
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,14 +63,19 @@ export default function HospitalDashboard() {
           </View>
 
           {/* RIGHT SIDE LOGOUT */}
-          <TouchableOpacity onPress={() => router.replace("/login")}>
+          <TouchableOpacity
+            onPress={() => {
+              logout();
+              router.replace("/login");
+            }}
+          >
             <Ionicons name="log-out-outline" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.userCard}>
           <Text style={{ color: "#cbd5e1" }}>Logged in as</Text>
-          <Text style={styles.userName}>Dr. Amit Verma</Text>
+          <Text style={styles.userName}>{user?.name ?? "Hospital Admin"}</Text>
           <Text style={styles.userRole}>Hospital Administrator</Text>
         </View>
       </View>

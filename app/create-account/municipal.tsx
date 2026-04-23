@@ -1,14 +1,14 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function MunicipalRegister() {
@@ -37,9 +37,7 @@ export default function MunicipalRegister() {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Create Account</Text>
-        <Text style={styles.headerSub}>
-          Municipal Authority Registration
-        </Text>
+        <Text style={styles.headerSub}>Municipal Authority Registration</Text>
       </View>
 
       {/* STEP BAR */}
@@ -63,9 +61,7 @@ export default function MunicipalRegister() {
       <View style={styles.card}>
         {step === 1 ? (
           <>
-            <Text style={styles.title}>
-              Municipal Authority Information
-            </Text>
+            <Text style={styles.title}>Municipal Authority Information</Text>
 
             {/* NAME */}
             <Text style={styles.label}>Officer Name *</Text>
@@ -82,28 +78,26 @@ export default function MunicipalRegister() {
               style={styles.input}
               placeholder="Government employee ID"
               value={form.employeeId}
-              onChangeText={(t) =>
-                setForm({ ...form, employeeId: t })
-              }
+              onChangeText={(t) => setForm({ ...form, employeeId: t })}
             />
 
             {/* DEPARTMENT */}
             <Text style={styles.label}>Department *</Text>
-            <View style={styles.inputRow}>
-              <Text style={{ color: form.department ? "#000" : "#9ca3af" }}>
-                {form.department || "Select Department"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} />
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Public Health Department"
+              value={form.department}
+              onChangeText={(t) => setForm({ ...form, department: t })}
+            />
 
             {/* WARD */}
             <Text style={styles.label}>Assigned Ward *</Text>
-            <View style={styles.inputRow}>
-              <Text style={{ color: form.ward ? "#000" : "#9ca3af" }}>
-                {form.ward || "Select Ward"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} />
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Ward 23, Pune"
+              value={form.ward}
+              onChangeText={(t) => setForm({ ...form, ward: t })}
+            />
           </>
         ) : (
           <>
@@ -126,9 +120,7 @@ export default function MunicipalRegister() {
                 placeholder="Create a strong password"
                 secureTextEntry={!showPass}
                 value={form.password}
-                onChangeText={(t) =>
-                  setForm({ ...form, password: t })
-                }
+                onChangeText={(t) => setForm({ ...form, password: t })}
               />
               <TouchableOpacity onPress={() => setShowPass(!showPass)}>
                 <Ionicons name={showPass ? "eye-off" : "eye"} size={20} />
@@ -145,13 +137,9 @@ export default function MunicipalRegister() {
                 placeholder="Re-enter password"
                 secureTextEntry={!showConfirm}
                 value={form.confirm}
-                onChangeText={(t) =>
-                  setForm({ ...form, confirm: t })
-                }
+                onChangeText={(t) => setForm({ ...form, confirm: t })}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirm(!showConfirm)}
-              >
+              <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
                 <Ionicons name={showConfirm ? "eye-off" : "eye"} size={20} />
               </TouchableOpacity>
             </View>
@@ -173,9 +161,37 @@ export default function MunicipalRegister() {
       {/* BUTTON */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-          if (step === 1) setStep(2);
-          else alert("Municipal Account Created!");
+        onPress={async () => {
+          if (step === 1) {
+            if (!form.name || !form.employeeId) {
+              alert("Please fill in all required fields");
+              return;
+            }
+            setStep(2);
+          } else {
+            if (!form.password || form.password.length < 6) {
+              alert("Password must be at least 6 characters");
+              return;
+            }
+            if (form.password !== form.confirm) {
+              alert("Passwords do not match");
+              return;
+            }
+            try {
+              await API.post("/api/auth/register", {
+                name: form.name,
+                email: form.email,
+                password: form.password,
+                role: "MUNICIPAL",
+                ward: form.ward,
+              });
+              alert("Municipal account created! Please login.");
+              router.replace("/login");
+            } catch (err: any) {
+              const msg = err?.response?.data?.error || "Registration failed";
+              alert(msg);
+            }
+          }
         }}
       >
         <Text style={styles.buttonText}>

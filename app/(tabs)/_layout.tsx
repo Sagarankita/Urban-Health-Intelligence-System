@@ -1,8 +1,15 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
 
 export default function TabLayout() {
+  const { user } = useAuth();
+  const role = user?.role ?? "PATIENT";
+
+  const hide = (tab: "PATIENT" | "HOSPITAL" | "MUNICIPAL") =>
+    role !== tab ? { tabBarButton: () => null } : {};
+
   return (
     <Tabs
       screenOptions={{
@@ -17,6 +24,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="home-outline" size={22} color={color} />
           ),
+          ...hide("PATIENT"),
         }}
       />
 
@@ -27,6 +35,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="medkit-outline" size={22} color={color} />
           ),
+          ...hide("HOSPITAL"),
         }}
       />
 
@@ -37,6 +46,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="business-outline" size={22} color={color} />
           ),
+          ...hide("MUNICIPAL"),
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={22} color={color} />
+          ),
+          tabBarButton: role === "PATIENT" ? undefined : () => null,
         }}
       />
     </Tabs>

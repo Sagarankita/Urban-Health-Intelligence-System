@@ -1,24 +1,33 @@
+import { useAuth } from "@/context/AuthContext";
 import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-
-const HOSPITAL_ID = 1;
 
 export default function ReportsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id ?? 1;
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [recommendModal, setRecommendModal] = useState(false);
+  const [recommendTarget, setRecommendTarget] = useState<number | null>(null);
+  const [recommendMsg, setRecommendMsg] = useState(
+    "Please visit the hospital for further evaluation.",
+  );
 
   const fetchReports = useCallback(async () => {
     try {
@@ -51,17 +60,52 @@ export default function ReportsScreen() {
     }
   };
 
-  const handleRecommendVisit = async (id: number) => {
+  const handleRecommendVisit = (id: number) => {
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Recommend Visit",
+        "Enter a message for the patient:",
+        async (msg) => {
+          if (!msg?.trim()) return;
+          try {
+            setActionLoading(id);
+            await API.patch(`/api/reports/${id}/recommend`, {
+              message: msg.trim(),
+            });
+            await fetchReports();
+            Alert.alert("Sent", "Recommendation sent to patient.");
+          } catch {
+            Alert.alert("Error", "Could not send recommendation");
+          } finally {
+            setActionLoading(null);
+          }
+        },
+        "plain-text",
+        "Please visit the hospital for further evaluation.",
+      );
+    } else {
+      // Android/Web: use a two-step alert approach
+      setRecommendTarget(id);
+      setRecommendMsg("Please visit the hospital for further evaluation.");
+      setRecommendModal(true);
+    }
+  };
+
+  const submitRecommend = async () => {
+    if (!recommendTarget || !recommendMsg.trim()) return;
     try {
-      setActionLoading(id);
-      await API.patch(`/api/reports/${id}/status`, { status: "ACKNOWLEDGED" });
+      setActionLoading(recommendTarget);
+      await API.patch(`/api/reports/${recommendTarget}/recommend`, {
+        message: recommendMsg.trim(),
+      });
       await fetchReports();
-      Alert.alert("Done", "Patient has been recommended for a visit");
-    } catch (err) {
-      console.error("Failed to update report:", err);
-      Alert.alert("Error", "Could not update report");
+      Alert.alert("Sent", "Recommendation sent to patient.");
+    } catch {
+      Alert.alert("Error", "Could not send recommendation");
     } finally {
       setActionLoading(null);
+      setRecommendModal(false);
+      setRecommendTarget(null);
     }
   };
 
@@ -134,6 +178,58 @@ export default function ReportsScreen() {
         })
       )}
 
+      {/* ANDROID RECOMMEND MODAL */}
+      <Modal
+        visible={recommendModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setRecommendModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <Text
+              style={{ fontWeight: "bold", fontSize: 16, marginBottom: 10 }}
+            >
+              Recommend Visit
+            </Text>
+            <Text style={{ color: "#6b7280", marginBottom: 8 }}>
+              Message for the patient:
+            </Text>
+            <TextInput
+              style={styles.msgInput}
+              value={recommendMsg}
+              onChangeText={setRecommendMsg}
+              multiline
+              numberOfLines={3}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+              <TouchableOpacity
+                style={[styles.btnDarkSmall, { flex: 1 }]}
+                onPress={submitRecommend}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Send
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnOutline, { flex: 1 }]}
+                onPress={() => setRecommendModal(false)}
+              >
+                <Text style={{ color: "#374151", textAlign: "center" }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* INFO */}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>
@@ -167,7 +263,13 @@ function ReportCard({
   const color = getColor();
 
   return (
-    <View style={[styles.card, isNew && styles.newCard, isCritical && styles.criticalCard]}>
+    <View
+      style={[
+        styles.card,
+        isNew && styles.newCard,
+        isCritical && styles.criticalCard,
+      ]}
+    >
       {/* HEADER */}
       <View style={styles.rowBetween}>
         <View>
@@ -345,4 +447,42 @@ const styles = StyleSheet.create({
   },
 
   infoText: { color: "#1E3A8A" },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+
+  modalSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+
+  msgInput: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    padding: 12,
+    textAlignVertical: "top",
+    fontSize: 14,
+    minHeight: 80,
+  },
+
+  btnDarkSmall: {
+    backgroundColor: "#0E2A4E",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  btnOutline: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
 });

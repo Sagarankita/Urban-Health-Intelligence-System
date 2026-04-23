@@ -5,7 +5,7 @@ import pool from "../config/db.js";
  */
 export const listAppointments = async (req, res) => {
   try {
-    const { hospital_id, status, date, limit } = req.query || {};
+    const { hospital_id, status, date, limit, patient_name } = req.query || {};
     const lim = Math.min(Number(limit) || 50, 200);
 
     const conditions = [];
@@ -15,6 +15,10 @@ export const listAppointments = async (req, res) => {
     if (hospital_id) {
       conditions.push(`a.hospital_id = $${idx++}`);
       params.push(Number(hospital_id));
+    }
+    if (patient_name) {
+      conditions.push(`a.patient_name ILIKE $${idx++}`);
+      params.push(patient_name);
     }
     if (status) {
       conditions.push(`a.status = $${idx++}`);
@@ -40,7 +44,7 @@ export const listAppointments = async (req, res) => {
       ${where}
       ORDER BY a.appointment_date ASC, a.appointment_time ASC
       LIMIT $${idx}`,
-      [...params, lim]
+      [...params, lim],
     );
     res.json(result.rows);
   } catch (e) {
@@ -67,10 +71,19 @@ export const createAppointment = async (req, res) => {
       notes,
     } = req.body;
 
-    if (!patient_name || !department || !hospital_id || !appointment_date || !appointment_time) {
+    if (
+      !patient_name ||
+      !department ||
+      !hospital_id ||
+      !appointment_date ||
+      !appointment_time
+    ) {
       return res
         .status(400)
-        .json({ error: "patient_name, department, hospital_id, appointment_date, appointment_time are required" });
+        .json({
+          error:
+            "patient_name, department, hospital_id, appointment_date, appointment_time are required",
+        });
     }
 
     const result = await pool.query(
@@ -88,7 +101,7 @@ export const createAppointment = async (req, res) => {
         insurance || null,
         priority || "NORMAL",
         notes || null,
-      ]
+      ],
     );
 
     res.status(201).json(result.rows[0]);
@@ -109,10 +122,18 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid id" });
 
     const { status, appointment_date, appointment_time, notes } = req.body;
-    const validStatuses = ["PENDING", "APPROVED", "RESCHEDULED", "CANCELLED", "COMPLETED"];
+    const validStatuses = [
+      "PENDING",
+      "APPROVED",
+      "RESCHEDULED",
+      "CANCELLED",
+      "COMPLETED",
+    ];
 
     if (!status || !validStatuses.includes(status.toUpperCase())) {
-      return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
+      return res
+        .status(400)
+        .json({ error: `status must be one of: ${validStatuses.join(", ")}` });
     }
 
     // Build dynamic SET clause
@@ -136,7 +157,7 @@ export const updateAppointmentStatus = async (req, res) => {
     params.push(id);
     const result = await pool.query(
       `UPDATE appointments SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`,
-      params
+      params,
     );
 
     if (result.rowCount === 0)
@@ -168,7 +189,7 @@ export const appointmentSummary = async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'RESCHEDULED') AS rescheduled,
         COUNT(*) AS total
       FROM appointments ${where}`,
-      params
+      params,
     );
     res.json(result.rows[0]);
   } catch (e) {

@@ -1,14 +1,14 @@
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ForgotPasswordScreen() {
@@ -16,6 +16,13 @@ export default function ForgotPasswordScreen() {
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [form, setForm] = useState({
+    email: "",
+    phone: "",
+    newPassword: "",
+    confirm: "",
+  });
+  const [loading, setLoading] = useState(false);
 
   return (
     <ScrollView style={styles.container}>
@@ -39,17 +46,21 @@ export default function ForgotPasswordScreen() {
 
       {/* FORM */}
       <View style={styles.form}>
-        {/* USERNAME */}
-        <Text style={styles.label}>Username *</Text>
-        <TextInput style={styles.input} placeholder="Enter your username" />
+        {/* EMAIL */}
+        <Text style={styles.label}>Email *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your registered email"
+          value={form.email}
+          onChangeText={(t) => setForm({ ...form, email: t })}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
         {/* DOB */}
         <Text style={styles.label}>Date of Birth *</Text>
         <View style={styles.inputRow}>
-          <TextInput
-            style={{ flex: 1 }}
-            placeholder="dd/mm/yyyy"
-          />
+          <TextInput style={{ flex: 1 }} placeholder="dd/mm/yyyy" />
           <Ionicons name="calendar-outline" size={20} />
         </View>
 
@@ -57,8 +68,10 @@ export default function ForgotPasswordScreen() {
         <Text style={styles.label}>Phone Number *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your mobile number"
+          placeholder="Enter your registered mobile number"
           keyboardType="numeric"
+          value={form.phone}
+          onChangeText={(t) => setForm({ ...form, phone: t })}
         />
         <Text style={styles.helper}>10-digit mobile number</Text>
 
@@ -69,6 +82,8 @@ export default function ForgotPasswordScreen() {
             style={{ flex: 1 }}
             placeholder="Create a new password"
             secureTextEntry={!showPass}
+            value={form.newPassword}
+            onChangeText={(t) => setForm({ ...form, newPassword: t })}
           />
           <TouchableOpacity onPress={() => setShowPass(!showPass)}>
             <Ionicons
@@ -87,6 +102,8 @@ export default function ForgotPasswordScreen() {
             style={{ flex: 1 }}
             placeholder="Re-enter your new password"
             secureTextEntry={!showConfirm}
+            value={form.confirm}
+            onChangeText={(t) => setForm({ ...form, confirm: t })}
           />
           <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
             <Ionicons
@@ -99,18 +116,53 @@ export default function ForgotPasswordScreen() {
 
         {/* PASSWORD RULES */}
         <View style={styles.rulesBox}>
-          <Text style={{ fontWeight: "bold" }}>
-            Password Requirements:
-          </Text>
+          <Text style={{ fontWeight: "bold" }}>Password Requirements:</Text>
           <Text>• At least 8 characters long</Text>
           <Text>• Mix of letters and numbers recommended</Text>
           <Text>• Avoid common words or personal info</Text>
         </View>
 
         {/* BUTTON */}
-        <TouchableOpacity style={styles.resetBtn}>
+        <TouchableOpacity
+          style={[
+            styles.resetBtn,
+            { backgroundColor: loading ? "#9ca3af" : "#0E2A4E" },
+          ]}
+          disabled={loading}
+          onPress={async () => {
+            if (!form.email || !form.phone || !form.newPassword) {
+              alert("Please fill in all fields");
+              return;
+            }
+            if (form.newPassword !== form.confirm) {
+              alert("Passwords do not match");
+              return;
+            }
+            if (form.newPassword.length < 8) {
+              alert("Password must be at least 8 characters");
+              return;
+            }
+            try {
+              setLoading(true);
+              await API.post("/api/auth/reset-password", {
+                email: form.email,
+                phone: form.phone,
+                new_password: form.newPassword,
+              });
+              alert("Password reset successful! Please login.");
+              router.replace("/login");
+            } catch (err: any) {
+              alert(
+                err?.response?.data?.error ||
+                  "Reset failed. Check your details.",
+              );
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
           <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            Reset Password
+            {loading ? "Resetting..." : "Reset Password"}
           </Text>
         </TouchableOpacity>
 

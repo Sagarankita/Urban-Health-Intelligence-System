@@ -2,13 +2,14 @@ import cors from "cors";
 import express from "express";
 
 // Route imports
-import resourceRoutes from "./routes/resource.routes.js";
-import outbreakRoutes from "./routes/outbreak.routes.js";
 import advisoryRoutes from "./routes/advisory.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 import geoRoutes from "./routes/geo.routes.js";
 import hospitalRoutes from "./routes/hospital.routes.js";
-import appointmentRoutes from "./routes/appointment.routes.js";
+import outbreakRoutes from "./routes/outbreak.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import resourceRoutes from "./routes/resource.routes.js";
 
 const app = express();
 
@@ -24,22 +25,30 @@ app.get("/", (req, res) => {
 app.post("/api/analyze", async (req, res) => {
   console.log("REQ BODY:", req.body);
 
-  const { symptoms, duration, severity } = req.body;
+  const { symptoms, duration, severity, ward, patient_name, hospital_id } =
+    req.body;
 
+  const severityInt = Math.round(Number(severity) || 50);
   let risk = "Mild";
 
-  if (severity > 70 || symptoms.includes("Chest Pain")) {
+  if (
+    severityInt > 70 ||
+    symptoms.includes("Chest Pain") ||
+    symptoms.includes("Shortness of Breath")
+  ) {
     risk = "Severe";
-  } else if (severity > 40) {
+  } else if (severityInt > 40) {
     risk = "Moderate";
   }
 
   const recommendation =
     risk === "Severe"
       ? "Visit hospital immediately"
-      : "Monitor symptoms and rest";
+      : risk === "Moderate"
+        ? "Consult a doctor if symptoms persist"
+        : "Monitor symptoms and rest";
 
-  // Also persist the report to DB (best-effort)
+  // Persist report to DB (best-effort)
   try {
     const pool = (await import("./config/db.js")).default;
     await pool.query(
@@ -47,14 +56,14 @@ app.post("/api/analyze", async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         JSON.stringify(symptoms),
-        severity,
+        severityInt,
         risk,
-        req.body.ward || "Ward 23, Pune",
-        req.body.patient_name || "Anonymous Patient",
-        req.body.hospital_id || 1,
+        ward || "Ward 23, Pune",
+        patient_name || "Anonymous Patient",
+        hospital_id || null,
         "NEW",
         recommendation,
-      ]
+      ],
     );
   } catch (dbErr) {
     console.log("Could not persist report to DB:", dbErr?.message);
@@ -78,5 +87,6 @@ app.use("/api/geo", geoRoutes);
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/auth", authRoutes);
 
 export default app;

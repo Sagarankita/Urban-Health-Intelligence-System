@@ -1,0 +1,191 @@
+record_id,hospital_name,area,ward,hospital_type,department,total_beds,available_beds,total_icu,available_icu,total_ventilators,available_ventilators,occupancy_percent,distance_km,wait_time_mins,rating,consultation_fee_inr,emergency_status,accepts_pmjay,accepts_abha,accepts_private_insurance,accepts_no_insurance,ai_match_score,city,state
+1,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Cardiology,200,117,20,12,25,7,41.5,8.2,64,3.8,655,Active,True,False,True,True,73.2,Pune,Maharashtra
+2,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Neurology,200,28,20,5,25,9,86.0,9.9,71,4.0,683,Closed,True,True,True,False,50,Pune,Maharashtra
+3,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Endocrinology,200,102,20,8,25,0,49.0,1.7,108,3.8,575,Active,False,True,True,False,53.2,Pune,Maharashtra
+4,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,ENT,200,102,20,12,25,6,49.0,4.1,68,4.3,582,Closed,True,True,True,True,64.9,Pune,Maharashtra
+5,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Gynecology,200,86,20,12,25,1,57.0,0.8,21,4.8,467,Active,False,True,True,True,50,Pune,Maharashtra
+6,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Gynecology,200,55,20,11,25,12,72.5,5.8,104,4.8,1484,Limited,True,True,False,False,50,Pune,Maharashtra
+7,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Cardiology,200,55,20,0,25,14,72.5,0.9,42,4.3,378,Active,True,True,True,False,50,Pune,Maharashtra
+8,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Oncology,200,73,20,5,25,14,63.5,1.5,59,4.1,821,Limited,False,True,True,True,50,Pune,Maharashtra
+9,City General Hospital,Shivajinagar,Ward 1,Multi-Specialty,Pediatrics,200,28,20,10,25,6,86.0,8.2,43,4.6,370,Limited,True,True,True,False,50,Pune,Maharashtra
+10,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Oncology,250,77,30,10,40,6,69.2,0.8,38,4.9,1023,Active,True,False,True,True,50,Pune,Maharashtra
+11,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Pulmonology,250,39,30,4,40,20,84.4,4.1,72,3.8,1035,Active,False,True,True,False,50,Pune,Maharashtra
+12,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Ophthalmology,250,51,30,6,40,0,79.6,6.3,46,4.5,667,Active,True,True,True,True,50,Pune,Maharashtra
+13,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Dermatology,250,38,30,10,40,12,84.8,11.5,20,4.4,396,Active,False,False,True,True,50,Pune,Maharashtra
+14,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Endocrinology,250,50,30,6,40,1,80.0,0.7,63,4.7,926,Active,True,False,True,True,50,Pune,Maharashtra
+15,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,ENT,250,52,30,7,40,22,79.2,2.4,110,4.0,1268,Active,True,False,True,True,50,Pune,Maharashtra
+16,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Urology,250,87,30,15,40,3,65.2,3.1,109,3.8,491,Closed,True,True,False,False,50,Pune,Maharashtra
+17,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,Gastroenterology,250,64,30,7,40,8,74.4,5.8,18,4.7,606,Active,True,True,True,True,50,Pune,Maharashtra
+18,Pune Medical Center,Kothrud,Ward 2,Multi-Specialty,General Medicine,250,30,30,11,40,6,88.0,1.9,28,4.6,1497,Active,True,True,True,True,50,Pune,Maharashtra
+19,Aundh District Hospital,Aundh,Ward 3,Government,Dermatology,150,50,15,6,20,0,66.7,7.7,84,4.1,0,Closed,False,True,True,False,50,Pune,Maharashtra
+20,Aundh District Hospital,Aundh,Ward 3,Government,Orthopedics,150,42,15,6,20,5,72.0,9.9,33,3.5,0,Limited,False,True,True,True,50,Pune,Maharashtra
+21,Aundh District Hospital,Aundh,Ward 3,Government,Urology,150,33,15,0,20,2,78.0,10.9,92,3.9,50,Active,True,True,True,False,50,Pune,Maharashtra
+22,Aundh District Hospital,Aundh,Ward 3,Government,Dermatology,150,70,15,2,20,9,53.3,2.7,33,4.0,0,Active,True,False,True,True,52.1,Pune,Maharashtra
+23,Aundh District Hospital,Aundh,Ward 3,Government,Gastroenterology,150,88,15,0,20,9,41.3,0.8,87,3.4,100,Active,True,False,True,True,72.2,Pune,Maharashtra
+24,Aundh District Hospital,Aundh,Ward 3,Government,Cardiology,150,19,15,1,20,9,87.3,4.7,99,4.1,100,Active,False,True,True,True,50,Pune,Maharashtra
+25,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,Gynecology,300,36,40,19,50,15,88.0,8.2,24,4.7,824,Active,True,True,True,False,50,Pune,Maharashtra
+26,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,Neurology,300,45,40,21,50,0,85.0,10.4,93,4.7,346,Active,False,True,True,True,50,Pune,Maharashtra
+27,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,General Medicine,300,52,40,0,50,23,82.7,3.0,42,4.0,513,Limited,True,True,True,True,50,Pune,Maharashtra
+28,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,Gastroenterology,300,129,40,9,50,19,57.0,0.9,111,5.0,1001,Active,True,True,True,True,61.1,Pune,Maharashtra
+29,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,Dermatology,300,140,40,16,50,10,53.3,5.9,84,4.3,1054,Limited,False,False,True,True,50,Pune,Maharashtra
+30,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,ENT,300,148,40,13,50,18,50.7,3.8,103,4.5,740,Active,True,True,True,True,67.5,Pune,Maharashtra
+31,Sahyadri Hospital Deccan,Deccan,Ward 4,Multi-Specialty,Oncology,300,142,40,11,50,30,52.7,6.3,117,4.0,932,Limited,True,False,True,True,60.8,Pune,Maharashtra
+32,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Pulmonology,120,35,12,3,15,6,70.8,5.1,117,3.3,0,Active,False,True,True,True,50,Pune,Maharashtra
+33,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Urology,120,58,12,7,15,4,51.7,8.4,112,3.8,100,Closed,True,True,False,False,67.3,Pune,Maharashtra
+34,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Ophthalmology,120,13,12,0,15,9,89.2,3.0,82,3.7,100,Active,False,True,True,True,50,Pune,Maharashtra
+35,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Nephrology,120,49,12,2,15,5,59.2,8.7,59,4.1,0,Active,True,True,True,False,54.4,Pune,Maharashtra
+36,KEM Hospital Pimpri,Pimpri,Ward 5,Government,General Medicine,120,39,12,0,15,0,67.5,9.4,54,4.2,100,Closed,False,True,True,False,50,Pune,Maharashtra
+37,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Nephrology,120,31,12,2,15,7,74.2,6.9,49,3.9,100,Limited,True,True,True,True,50,Pune,Maharashtra
+38,KEM Hospital Pimpri,Pimpri,Ward 5,Government,Gynecology,120,57,12,5,15,3,52.5,2.3,17,3.5,0,Closed,True,True,True,True,62.4,Pune,Maharashtra
+39,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Neurology,350,75,50,1,60,27,78.6,6.5,97,4.3,446,Active,True,True,True,True,50,Pune,Maharashtra
+40,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Urology,350,91,50,12,60,12,74.0,3.0,46,4.8,1095,Active,True,True,True,False,50,Pune,Maharashtra
+41,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,General Medicine,350,90,50,9,60,10,74.3,6.0,71,4.4,1405,Active,True,True,True,True,50,Pune,Maharashtra
+42,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Cardiology,350,39,50,7,60,15,88.9,6.1,50,4.0,1377,Limited,False,True,True,False,50,Pune,Maharashtra
+43,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Pediatrics,350,152,50,17,60,32,56.6,5.8,28,4.5,1127,Active,True,True,True,True,55.6,Pune,Maharashtra
+44,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Nephrology,350,108,50,25,60,26,69.1,3.0,52,4.3,929,Active,False,False,True,True,50,Pune,Maharashtra
+45,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Pulmonology,350,174,50,10,60,18,50.3,9.9,42,4.0,538,Active,True,True,True,False,65.3,Pune,Maharashtra
+46,Ruby Hall Clinic,Wanowrie,Ward 6,Multi-Specialty,Orthopedics,350,126,50,21,60,20,64.0,11.6,116,4.3,1170,Active,False,True,True,True,50,Pune,Maharashtra
+47,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,Ophthalmology,280,148,35,15,45,1,47.1,10.7,85,4.0,451,Limited,True,False,True,True,60.4,Pune,Maharashtra
+48,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,Ophthalmology,280,50,35,1,45,11,82.1,9.6,64,4.0,439,Active,False,True,True,True,50,Pune,Maharashtra
+49,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,ENT,280,147,35,15,45,17,47.5,0.6,59,4.2,1005,Limited,False,False,True,True,50.2,Pune,Maharashtra
+50,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,General Medicine,280,143,35,2,45,6,48.9,9.4,92,4.2,452,Active,True,True,True,True,62.4,Pune,Maharashtra
+51,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,Endocrinology,280,101,35,8,45,2,63.9,8.3,98,4.1,1009,Active,True,False,True,True,50,Pune,Maharashtra
+52,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,General Medicine,280,107,35,13,45,3,61.8,11.8,84,4.2,1053,Active,True,False,True,True,51.3,Pune,Maharashtra
+53,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,Ophthalmology,280,134,35,15,45,20,52.1,7.0,17,4.9,1459,Active,True,True,True,True,61.8,Pune,Maharashtra
+54,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,Psychiatry,280,53,35,7,45,12,81.1,10.6,105,4.7,1078,Active,True,True,True,False,50,Pune,Maharashtra
+55,Jehangir Hospital,Sassoon Road,Ward 7,Multi-Specialty,General Medicine,280,142,35,4,45,15,49.3,0.6,41,4.1,380,Active,False,False,True,True,50,Pune,Maharashtra
+56,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Gastroenterology,400,102,60,22,70,39,74.5,9.5,23,4.8,559,Active,True,True,True,True,50,Pune,Maharashtra
+57,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Neurology,400,53,60,0,70,21,86.8,3.1,81,4.4,993,Limited,True,False,True,True,50,Pune,Maharashtra
+58,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Ophthalmology,400,76,60,2,70,35,81.0,2.0,118,4.0,729,Active,True,True,True,True,50,Pune,Maharashtra
+59,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Dermatology,400,126,60,19,70,37,68.5,9.3,26,4.2,625,Active,False,True,True,True,50,Pune,Maharashtra
+60,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Nephrology,400,87,60,31,70,21,78.2,3.2,88,4.2,634,Limited,False,True,True,True,50,Pune,Maharashtra
+61,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Endocrinology,400,219,60,7,70,30,45.2,9.4,57,4.9,1381,Limited,True,True,True,False,73.8,Pune,Maharashtra
+62,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Gastroenterology,400,194,60,20,70,2,51.5,3.4,65,3.9,1459,Limited,False,True,True,True,50,Pune,Maharashtra
+63,Deenanath Mangeshkar Hospital,Erandwane,Ward 8,Multi-Specialty,Ophthalmology,400,153,60,3,70,29,61.8,7.5,107,4.4,851,Closed,False,False,True,True,50,Pune,Maharashtra
+64,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,General Medicine,180,19,20,11,25,2,89.4,9.5,100,3.9,881,Active,True,True,True,False,50,Pune,Maharashtra
+65,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Psychiatry,180,43,20,0,25,12,76.1,7.8,92,4.3,1190,Active,True,True,True,True,50,Pune,Maharashtra
+66,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Urology,180,18,20,0,25,12,90.0,1.3,66,4.9,1395,Limited,True,True,False,False,50,Pune,Maharashtra
+67,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Cardiology,180,96,20,4,25,6,46.7,9.7,117,4.9,1022,Limited,True,True,False,False,65.6,Pune,Maharashtra
+68,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Ophthalmology,180,95,20,9,25,7,47.2,2.5,115,4.1,1043,Closed,False,True,True,False,53.6,Pune,Maharashtra
+69,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Pediatrics,180,91,20,1,25,5,49.4,7.4,22,4.6,1448,Active,True,True,True,False,64.1,Pune,Maharashtra
+70,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,ENT,180,34,20,8,25,13,81.1,10.0,83,4.6,823,Active,True,False,True,True,50,Pune,Maharashtra
+71,Noble Hospital,Magarpatta,Ward 9,Multi-Specialty,Endocrinology,180,64,20,2,25,9,64.4,3.9,96,4.1,1039,Active,False,True,True,False,50,Pune,Maharashtra
+72,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Gynecology,200,103,25,3,30,12,48.5,8.0,101,4.0,842,Active,True,True,False,False,67.7,Pune,Maharashtra
+73,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Psychiatry,200,87,25,7,30,12,56.5,8.5,111,3.9,944,Active,False,False,True,True,50,Pune,Maharashtra
+74,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Psychiatry,200,72,25,1,30,2,64.0,3.7,112,4.5,537,Limited,True,True,True,True,51.2,Pune,Maharashtra
+75,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Orthopedics,200,25,25,2,30,12,87.5,5.2,78,4.0,1345,Active,True,True,True,True,50,Pune,Maharashtra
+76,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Ophthalmology,200,87,25,14,30,5,56.5,11.9,23,4.5,363,Active,True,True,False,False,55.7,Pune,Maharashtra
+77,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Neurology,200,28,25,13,30,14,86.0,10.5,78,4.2,609,Active,True,True,True,True,50,Pune,Maharashtra
+78,Inamdar Hospital,Fatima Nagar,Ward 10,Multi-Specialty,Pulmonology,200,83,25,1,30,6,58.5,7.6,17,4.0,388,Active,True,True,True,True,57.9,Pune,Maharashtra
+79,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Urology,100,41,10,5,12,3,59.0,10.1,62,4.6,460,Active,True,True,True,True,52.6,Pune,Maharashtra
+80,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Urology,100,26,10,0,12,5,74.0,9.0,17,4.7,1385,Closed,True,True,True,True,50,Pune,Maharashtra
+81,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Oncology,100,58,10,6,12,4,42.0,5.2,31,4.6,526,Active,False,True,True,True,60.5,Pune,Maharashtra
+82,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Dermatology,100,17,10,0,12,6,83.0,8.4,104,4.7,896,Closed,False,True,True,False,50,Pune,Maharashtra
+83,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Urology,100,21,10,2,12,6,79.0,8.0,97,4.2,405,Active,False,True,True,True,50,Pune,Maharashtra
+84,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Pediatrics,100,12,10,5,12,2,88.0,2.2,89,5.0,480,Active,True,True,True,False,50,Pune,Maharashtra
+85,Sanjeevan Hospital,Bibwewadi,Ward 11,Specialty,Oncology,100,22,10,2,12,5,78.0,2.9,89,4.6,1123,Active,False,False,True,True,50,Pune,Maharashtra
+86,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,Psychiatry,220,74,25,8,30,4,66.4,5.5,46,4.8,668,Active,True,True,True,True,52.1,Pune,Maharashtra
+87,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,Gynecology,220,66,25,0,30,0,70.0,6.7,109,4.0,976,Active,True,True,False,False,50,Pune,Maharashtra
+88,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,ENT,220,69,25,14,30,12,68.6,7.8,120,4.6,987,Closed,False,True,True,True,50,Pune,Maharashtra
+89,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,Orthopedics,220,110,25,11,30,10,50.0,7.1,111,4.6,1013,Active,True,True,True,True,65.2,Pune,Maharashtra
+90,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,Nephrology,220,34,25,3,30,4,84.5,4.7,56,4.0,907,Closed,True,True,True,True,50,Pune,Maharashtra
+91,Poona Hospital,Sadashiv Peth,Ward 12,Multi-Specialty,Gastroenterology,220,41,25,15,30,13,81.4,10.5,29,4.6,1132,Closed,False,True,True,True,50,Pune,Maharashtra
+92,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,General Medicine,160,25,18,4,22,6,84.4,8.1,56,4.9,906,Active,True,True,True,True,50,Pune,Maharashtra
+93,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Pulmonology,160,93,18,3,22,10,41.9,5.5,97,4.9,1467,Active,False,True,True,True,64.9,Pune,Maharashtra
+94,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Cardiology,160,62,18,5,22,2,61.3,11.3,75,5.0,523,Active,True,True,False,False,50.9,Pune,Maharashtra
+95,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Oncology,160,94,18,8,22,10,41.2,10.2,70,3.9,689,Active,True,True,True,True,70.9,Pune,Maharashtra
+96,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Cardiology,160,21,18,9,22,6,86.9,3.8,57,4.3,308,Limited,True,True,True,False,50,Pune,Maharashtra
+97,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Oncology,160,65,18,3,22,7,59.4,10.5,102,4.4,511,Active,True,False,True,True,50,Pune,Maharashtra
+98,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Cardiology,160,39,18,4,22,11,75.6,5.2,102,4.4,550,Active,True,True,True,True,50,Pune,Maharashtra
+99,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Pediatrics,160,33,18,8,22,13,79.4,3.5,97,4.9,1355,Limited,False,True,True,True,50,Pune,Maharashtra
+100,Inlaks & Budhrani Hospital,Koregaon Park,Ward 13,Multi-Specialty,Orthopedics,160,30,18,9,22,7,81.2,11.1,40,4.1,1470,Limited,False,True,True,False,50,Pune,Maharashtra
+101,Medipoint Hospital,Aundh,Ward 3,Specialty,Endocrinology,120,27,15,7,18,3,77.5,3.9,52,5.0,907,Limited,True,True,True,True,50,Pune,Maharashtra
+102,Medipoint Hospital,Aundh,Ward 3,Specialty,Oncology,120,23,15,0,18,9,80.8,4.4,93,3.9,1391,Closed,True,True,True,True,50,Pune,Maharashtra
+103,Medipoint Hospital,Aundh,Ward 3,Specialty,Ophthalmology,120,12,15,9,18,3,90.0,3.8,33,3.9,505,Active,True,True,True,True,50,Pune,Maharashtra
+104,Medipoint Hospital,Aundh,Ward 3,Specialty,Urology,120,36,15,3,18,7,70.0,3.9,87,4.2,442,Active,True,True,True,False,50,Pune,Maharashtra
+105,Medipoint Hospital,Aundh,Ward 3,Specialty,Pediatrics,120,26,15,9,18,6,78.3,9.1,89,3.8,778,Active,True,True,False,False,50,Pune,Maharashtra
+106,Medipoint Hospital,Aundh,Ward 3,Specialty,General Medicine,120,32,15,9,18,7,73.3,3.0,45,4.2,688,Active,True,True,True,True,50,Pune,Maharashtra
+107,Medipoint Hospital,Aundh,Ward 3,Specialty,Gynecology,120,53,15,8,18,4,55.8,9.1,66,4.0,378,Active,False,False,True,True,50,Pune,Maharashtra
+108,Medipoint Hospital,Aundh,Ward 3,Specialty,Gynecology,120,34,15,3,18,5,71.7,7.9,93,3.9,511,Limited,True,True,True,True,50,Pune,Maharashtra
+109,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Pediatrics,140,81,16,0,20,12,42.1,9.5,41,4.2,1483,Active,False,True,True,False,58.3,Pune,Maharashtra
+110,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Cardiology,140,67,16,9,20,5,52.1,9.8,34,4.9,842,Limited,True,True,True,True,66.8,Pune,Maharashtra
+111,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Endocrinology,140,19,16,2,20,8,86.4,5.9,15,4.7,785,Closed,True,False,True,True,50,Pune,Maharashtra
+112,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Dermatology,140,23,16,0,20,4,83.6,3.5,115,4.4,828,Active,True,True,True,True,50,Pune,Maharashtra
+113,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Neurology,140,15,16,4,20,11,89.3,1.7,110,3.8,1112,Active,True,True,True,True,50,Pune,Maharashtra
+114,Oyster & Pearl Hospital,Wakad,Ward 14,Multi-Specialty,Oncology,140,47,16,6,20,8,66.4,7.6,34,4.3,1098,Active,False,True,True,False,50,Pune,Maharashtra
+115,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,Orthopedics,180,44,22,0,28,6,75.6,5.1,105,4.1,1177,Active,False,True,True,True,50,Pune,Maharashtra
+116,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,ENT,180,33,22,11,28,11,81.7,7.4,42,4.6,1027,Limited,True,False,True,True,50,Pune,Maharashtra
+117,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,Gynecology,180,101,22,8,28,2,43.9,3.1,19,4.8,906,Limited,True,True,True,True,70.2,Pune,Maharashtra
+118,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,General Medicine,180,40,22,3,28,11,77.8,11.6,90,3.9,1344,Limited,False,False,True,True,50,Pune,Maharashtra
+119,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,Pediatrics,180,38,22,3,28,1,78.9,9.3,70,4.2,475,Active,True,True,False,False,50,Pune,Maharashtra
+120,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,ENT,180,90,22,2,28,15,50.0,6.2,21,4.9,1221,Active,True,False,True,True,58.9,Pune,Maharashtra
+121,Columbia Asia Hospital,Viman Nagar,Ward 15,Multi-Specialty,Pulmonology,180,68,22,8,28,5,62.2,5.7,113,4.5,751,Limited,True,True,True,False,50,Pune,Maharashtra
+122,Surya Mother & Child Care,Wakad,Ward 14,Specialty,Dermatology,80,26,8,3,10,2,67.5,4.5,16,4.7,1320,Active,True,True,True,False,51.9,Pune,Maharashtra
+123,Surya Mother & Child Care,Wakad,Ward 14,Specialty,Gynecology,80,33,8,3,10,0,58.8,3.8,107,4.5,637,Active,True,True,True,True,58.4,Pune,Maharashtra
+124,Surya Mother & Child Care,Wakad,Ward 14,Specialty,General Medicine,80,8,8,1,10,1,90.0,7.9,108,5.0,874,Active,True,True,True,True,50,Pune,Maharashtra
+125,Surya Mother & Child Care,Wakad,Ward 14,Specialty,Endocrinology,80,31,8,4,10,2,61.3,11.9,24,4.6,1027,Active,False,True,True,False,50,Pune,Maharashtra
+126,Surya Mother & Child Care,Wakad,Ward 14,Specialty,Ophthalmology,80,30,8,0,10,4,62.5,1.5,94,4.3,1140,Active,True,True,True,True,55.4,Pune,Maharashtra
+127,Surya Mother & Child Care,Wakad,Ward 14,Specialty,Endocrinology,80,36,8,4,10,5,55.0,3.1,100,4.2,1430,Active,False,True,True,False,50,Pune,Maharashtra
+128,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Gynecology,500,57,70,23,80,47,88.6,8.9,77,4.3,111,Limited,True,False,True,True,50,Pune,Maharashtra
+129,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Endocrinology,500,257,70,40,80,5,48.6,11.6,105,4.2,203,Active,False,False,True,True,50,Pune,Maharashtra
+130,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,General Medicine,500,107,70,31,80,35,78.6,4.1,33,4.2,284,Active,True,True,False,False,50,Pune,Maharashtra
+131,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Gynecology,500,118,70,12,80,3,76.4,8.8,53,3.8,215,Closed,True,True,True,True,50,Pune,Maharashtra
+132,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Urology,500,78,70,13,80,2,84.4,3.0,60,3.9,196,Active,False,False,True,True,50,Pune,Maharashtra
+133,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Gastroenterology,500,181,70,1,80,21,63.8,2.6,75,4.2,185,Active,True,True,True,True,52.2,Pune,Maharashtra
+134,Bharati Hospital,Dhankawadi,Ward 16,Teaching Hospital,Psychiatry,500,235,70,28,80,23,53.0,8.9,48,4.1,144,Active,True,False,True,True,57.5,Pune,Maharashtra
+135,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Orthopedics,250,27,30,4,38,2,89.2,4.4,61,4.5,544,Limited,False,True,True,True,50,Pune,Maharashtra
+136,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Oncology,250,129,30,14,38,0,48.4,9.2,108,3.8,1394,Limited,False,True,True,False,53.0,Pune,Maharashtra
+137,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Urology,250,115,30,10,38,0,54.0,2.9,99,4.5,1453,Active,False,True,True,True,50,Pune,Maharashtra
+138,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Oncology,250,99,30,10,38,9,60.4,10.0,92,4.3,853,Closed,False,True,True,False,50,Pune,Maharashtra
+139,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Orthopedics,250,121,30,5,38,17,51.6,8.4,63,3.9,472,Limited,True,False,True,True,58.1,Pune,Maharashtra
+140,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Urology,250,131,30,5,38,3,47.6,5.5,78,4.0,1500,Limited,True,True,True,False,68.0,Pune,Maharashtra
+141,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Neurology,250,119,30,16,38,11,52.4,3.5,73,4.1,1437,Active,True,False,True,True,60.4,Pune,Maharashtra
+142,Grant Medical Foundation,Swargate,Ward 17,Multi-Specialty,Oncology,250,76,30,4,38,3,69.6,9.4,30,4.7,769,Active,False,True,True,True,50,Pune,Maharashtra
+143,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Cardiology,200,74,22,3,28,16,63.0,7.0,118,4.4,922,Closed,False,False,True,True,50,Pune,Maharashtra
+144,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,General Medicine,200,86,22,6,28,13,57.0,11.1,70,4.1,930,Closed,True,True,False,False,57.6,Pune,Maharashtra
+145,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Oncology,200,33,22,7,28,10,83.5,2.8,100,4.3,1044,Active,True,True,False,False,50,Pune,Maharashtra
+146,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,General Medicine,200,47,22,11,28,7,76.5,3.4,107,4.6,339,Active,True,True,True,True,50,Pune,Maharashtra
+147,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Dermatology,200,77,22,5,28,3,61.5,9.8,25,4.5,515,Active,True,True,True,True,50,Pune,Maharashtra
+148,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Urology,200,23,22,9,28,11,88.5,8.9,114,4.8,1213,Active,False,False,True,True,50,Pune,Maharashtra
+149,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Pediatrics,200,21,22,13,28,2,89.5,6.4,95,4.9,996,Limited,True,True,True,True,50,Pune,Maharashtra
+150,Lokmanya Hospital,Chinchwad,Ward 18,Multi-Specialty,Orthopedics,200,112,22,10,28,7,44.0,4.0,89,4.1,804,Closed,False,True,True,True,63.3,Pune,Maharashtra
+151,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,Cardiology,150,60,18,0,22,8,60.0,8.7,90,4.7,1327,Closed,True,True,True,True,58.0,Pune,Maharashtra
+152,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,Gynecology,150,34,18,1,22,1,77.3,11.9,54,4.4,359,Active,False,True,True,False,50,Pune,Maharashtra
+153,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,Oncology,150,29,18,8,22,7,80.7,7.9,86,4.2,310,Active,True,True,False,False,50,Pune,Maharashtra
+154,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,Orthopedics,150,79,18,8,22,8,47.3,4.1,94,4.5,1271,Active,True,False,True,True,60.7,Pune,Maharashtra
+155,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,ENT,150,58,18,0,22,5,61.3,7.1,24,4.5,536,Closed,True,True,True,True,52.8,Pune,Maharashtra
+156,Symbiosis Hospital,Lavale,Ward 19,Multi-Specialty,Cardiology,150,81,18,8,22,10,46.0,9.8,36,4.4,1452,Closed,True,False,True,True,64.1,Pune,Maharashtra
+157,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Dermatology,200,115,25,8,32,17,42.5,6.7,88,4.5,820,Active,False,False,True,True,52.6,Pune,Maharashtra
+158,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Dermatology,200,80,25,10,32,4,60.0,1.6,75,3.9,349,Active,True,False,True,True,50,Pune,Maharashtra
+159,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Pediatrics,200,78,25,9,32,0,61.0,6.1,67,4.8,962,Active,True,True,False,False,51.2,Pune,Maharashtra
+160,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Cardiology,200,96,25,3,32,13,52.0,4.2,112,4.6,1178,Limited,True,True,True,False,63.7,Pune,Maharashtra
+161,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,ENT,200,30,25,10,32,8,85.0,9.6,90,4.3,774,Limited,True,True,False,False,50,Pune,Maharashtra
+162,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Dermatology,200,120,25,12,32,14,40.0,5.8,61,4.7,1293,Active,True,True,True,True,77.8,Pune,Maharashtra
+163,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Nephrology,200,76,25,6,32,7,62.0,6.1,86,4.0,486,Active,True,True,True,True,54.5,Pune,Maharashtra
+164,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Endocrinology,200,53,25,7,32,9,73.5,2.5,17,4.9,1139,Closed,True,True,True,False,50,Pune,Maharashtra
+165,Manipal Hospital Baner,Baner,Ward 20,Multi-Specialty,Pediatrics,200,105,25,4,32,18,47.5,7.2,92,4.0,1118,Active,True,False,True,True,60.5,Pune,Maharashtra
+166,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,ENT,300,35,35,21,42,24,88.3,1.6,64,3.5,0,Active,True,True,True,True,50,Pune,Maharashtra
+167,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Dermatology,300,155,35,5,42,4,48.3,4.4,90,4.1,100,Closed,True,True,False,False,66.7,Pune,Maharashtra
+168,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Gastroenterology,300,113,35,12,42,21,62.3,4.1,33,3.9,50,Active,False,True,True,False,50,Pune,Maharashtra
+169,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Endocrinology,300,121,35,17,42,3,59.7,10.3,102,4.1,0,Active,False,True,True,True,50,Pune,Maharashtra
+170,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Pediatrics,300,162,35,4,42,14,46.0,4.9,73,4.0,50,Limited,False,False,True,True,56.9,Pune,Maharashtra
+171,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Gastroenterology,300,103,35,18,42,8,65.7,9.9,109,3.9,100,Active,True,True,False,False,50,Pune,Maharashtra
+172,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Nephrology,300,107,35,15,42,22,64.3,11.8,89,3.9,0,Active,False,False,True,True,50,Pune,Maharashtra
+173,Yashwantrao Chavan Hospital,Pimpri,Ward 5,Government,Oncology,300,173,35,3,42,25,42.3,6.2,79,3.8,0,Closed,False,True,True,True,62.1,Pune,Maharashtra
+174,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Ophthalmology,170,53,20,11,25,6,68.8,4.7,45,3.9,1267,Closed,True,True,True,False,50,Pune,Maharashtra
+175,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Pediatrics,170,77,20,5,25,6,54.7,1.0,110,4.7,599,Closed,True,True,True,True,55.4,Pune,Maharashtra
+176,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Nephrology,170,32,20,3,25,13,81.2,6.7,37,4.1,1450,Active,True,True,True,True,50,Pune,Maharashtra
+177,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Endocrinology,170,51,20,1,25,10,70.0,8.5,101,3.8,892,Active,False,False,True,True,50,Pune,Maharashtra
+178,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Psychiatry,170,93,20,3,25,0,45.3,2.3,19,4.6,1467,Limited,False,True,True,False,57.7,Pune,Maharashtra
+179,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Gynecology,170,46,20,11,25,1,72.9,10.2,65,4.3,1108,Limited,True,True,True,True,50,Pune,Maharashtra
+180,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Ophthalmology,170,75,20,10,25,10,55.9,4.4,45,3.9,861,Active,False,False,True,True,50,Pune,Maharashtra
+181,Nanavati Hospital,Hadapsar,Ward 21,Multi-Specialty,Dermatology,170,18,20,7,25,14,89.4,4.2,71,4.1,1301,Limited,False,True,True,False,50,Pune,Maharashtra
+182,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Gynecology,130,56,15,6,18,4,56.9,1.3,74,4.4,1043,Active,True,False,True,True,50,Pune,Maharashtra
+183,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Orthopedics,130,43,15,6,18,8,66.9,9.9,53,4.6,709,Closed,True,True,True,True,50,Pune,Maharashtra
+184,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Pediatrics,130,47,15,1,18,9,63.8,6.6,90,3.9,1390,Limited,True,True,True,True,51.8,Pune,Maharashtra
+185,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,General Medicine,130,31,15,6,18,7,76.2,6.7,92,4.4,363,Active,False,True,True,True,50,Pune,Maharashtra
+186,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Pediatrics,130,33,15,1,18,8,74.6,2.1,50,5.0,953,Active,True,True,True,False,50,Pune,Maharashtra
+187,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,ENT,130,32,15,0,18,8,75.4,4.7,114,4.4,867,Closed,True,True,True,True,50,Pune,Maharashtra
+188,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Oncology,130,27,15,7,18,0,79.2,8.3,57,4.5,592,Active,False,False,True,True,50,Pune,Maharashtra
+189,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Gastroenterology,130,30,15,1,18,7,76.9,6.4,84,3.8,808,Active,True,False,True,True,50,Pune,Maharashtra
+190,Care Hospital,Viman Nagar,Ward 15,Multi-Specialty,Pulmonology,130,61,15,2,18,9,53.1,8.9,26,4.3,801,Closed,False,True,True,True,50,Pune,Maharashtra

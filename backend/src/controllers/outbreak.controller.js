@@ -32,7 +32,7 @@ const persistModelOutput = async (result) => {
           w?.growth_48h_pct ?? null,
           w?.actual ?? null,
           w?.syndrome ?? null,
-        ]
+        ],
       );
     }
 
@@ -43,7 +43,7 @@ const persistModelOutput = async (result) => {
       for (const msg of msgs) {
         await client.query(
           `INSERT INTO advisories (message, target_area) VALUES ($1,$2)`,
-          [msg, targetArea]
+          [msg, targetArea],
         );
       }
     }
@@ -62,7 +62,7 @@ export const getOutbreaks = async (req, res) => {
     // Try database first, fallback to mock data
     try {
       const result = await pool.query(
-        "SELECT * FROM outbreaks ORDER BY outbreak_prob DESC"
+        "SELECT * FROM outbreaks ORDER BY outbreak_prob DESC",
       );
       return res.json(result.rows);
     } catch (dbError) {
@@ -77,7 +77,7 @@ export const getOutbreaks = async (req, res) => {
           growth_48h: 3.4,
           cases: 80,
           syndrome: "respiratory",
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: 2,
@@ -88,8 +88,8 @@ export const getOutbreaks = async (req, res) => {
           growth_48h: 7.0,
           cases: 46,
           syndrome: "respiratory",
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ]);
     }
   } catch (error) {
@@ -114,7 +114,7 @@ export const getWardStats = async (req, res) => {
           score: 85,
           trend: "+18% increase",
           top_symptoms: ["Fever", "Cough", "Headache"],
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: 2,
@@ -123,8 +123,8 @@ export const getWardStats = async (req, res) => {
           score: 58,
           trend: "Stable trend",
           top_symptoms: ["Cough", "Fatigue"],
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ]);
     }
   } catch (error) {
@@ -138,15 +138,17 @@ export const getHeatmapData = async (req, res) => {
     console.log("Starting Python process for heatmap data...");
 
     // Run Python script to get AI-processed data
-    const pythonProcess = spawn("py", [
-      path.join(__dirname, "../../models/untitled10.py"),
-      "--get-data"
-    ], {
-      cwd: path.join(__dirname, "../.."),
-      stdio: ["pipe", "pipe", "pipe"],
-      // Ensure child process inherits DB_* variables for `models/untitled10.py`.
-      env: process.env
-    });
+    const pythonCmd = process.platform === "win32" ? "py" : "python3";
+    const pythonProcess = spawn(
+      pythonCmd,
+      [path.join(__dirname, "../../models/untitled10.py"), "--get-data"],
+      {
+        cwd: path.join(__dirname, "../.."),
+        stdio: ["pipe", "pipe", "pipe"],
+        // Ensure child process inherits DB_* variables for `models/untitled10.py`.
+        env: process.env,
+      },
+    );
 
     let data = "";
     let error = "";
@@ -193,7 +195,6 @@ export const getHeatmapData = async (req, res) => {
       console.log("Python process timed out, using mock data...");
       res.json(getMockHeatmapData());
     }, 30000); // 30 second timeout
-
   } catch (error) {
     console.error("Error in getHeatmapData:", error);
     // Fallback to mock data
@@ -213,18 +214,18 @@ const getMockHeatmapData = () => {
     zone_summary: {
       RED: ["Ward 1 - Shivajinagar", "Ward 2 - Kothrud"],
       YELLOW: ["Ward 3 - Aundh"],
-      GREEN: []
+      GREEN: [],
     },
     top_symptoms: [
       { name: "Fever", value: 78 },
       { name: "Cough", value: 65 },
       { name: "Headache", value: 52 },
-      { name: "Body Ache", value: 41 }
+      { name: "Body Ache", value: 41 },
     ],
     ward_symptoms: {
       "Ward 1 - Shivajinagar": ["Fever", "Cough", "Shortness of Breath"],
       "Ward 2 - Kothrud": ["Fever", "Cough", "Shortness of Breath"],
-      "Ward 3 - Aundh": ["Nausea", "Vomiting", "Diarrhea"]
+      "Ward 3 - Aundh": ["Nausea", "Vomiting", "Diarrhea"],
     },
     top_hotspots: [
       {
@@ -239,8 +240,8 @@ const getMockHeatmapData = () => {
         advisories: [
           "[URGENT] Activate district outbreak response team",
           "[URGENT] Alert District Health Officer and CMO immediately",
-          "Increase OPD capacity by 40% in affected wards"
-        ]
+          "Increase OPD capacity by 40% in affected wards",
+        ],
       },
       {
         ward: "Ward 2 - Kothrud",
@@ -253,8 +254,8 @@ const getMockHeatmapData = () => {
         wow_growth_pct: 24.4,
         advisories: [
           "[URGENT] Activate district outbreak response team",
-          "[URGENT] Alert District Health Officer and CMO immediately"
-        ]
+          "[URGENT] Alert District Health Officer and CMO immediately",
+        ],
       },
       {
         ward: "Ward 3 - Aundh",
@@ -267,9 +268,9 @@ const getMockHeatmapData = () => {
         wow_growth_pct: 18.1,
         advisories: [
           "Elevate monitoring to daily case review",
-          "Pre-stock medications, ORS, and IV fluids at PHCs"
-        ]
-      }
+          "Pre-stock medications, ORS, and IV fluids at PHCs",
+        ],
+      },
     ],
     all_wards: [
       {
@@ -277,23 +278,23 @@ const getMockHeatmapData = () => {
         zone: "RED",
         outbreak_prob: 77.7,
         hotspot_score: 65.85,
-        actual: 80
+        actual: 80,
       },
       {
         ward: "Ward 2 - Kothrud",
         zone: "RED",
         outbreak_prob: 75.0,
         hotspot_score: 57.34,
-        actual: 46
+        actual: 46,
       },
       {
         ward: "Ward 3 - Aundh",
         zone: "YELLOW",
         outbreak_prob: 61.1,
         hotspot_score: 48.06,
-        actual: 58
-      }
+        actual: 58,
+      },
     ],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 };

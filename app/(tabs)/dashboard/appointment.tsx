@@ -1,264 +1,266 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import API from "../../../services/api";
+
+const STATUS_COLOR: Record<string, string> = {
+  PENDING: "#F59E0B",
+  APPROVED: "#16A34A",
+  RESCHEDULED: "#3B82F6",
+  CANCELLED: "#EF4444",
+  COMPLETED: "#6B7280",
+};
 
 export default function AppointmentScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const fetchAppointments = useCallback(async () => {
+    if (!user?.name) return;
+    try {
+      const res = await API.get("/api/appointments", {
+        params: { patient_name: user.name, limit: 20 },
+      });
+      setAppointments(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error("Failed to fetch appointments", e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.name]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  const handleCancel = async (id: number) => {
+    try {
+      setCancelling(true);
+      await API.patch(`/api/appointments/${id}/status`, {
+        status: "CANCELLED",
+      });
+      setCancelConfirm(null);
+      await fetchAppointments();
+    } catch {
+      Alert.alert("Error", "Could not cancel appointment");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            fetchAppointments();
+          }}
+        />
+      }
+    >
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/dashboard")}>
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/dashboard")}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Appointment Confirmed</Text>
-        <Text style={styles.headerSub}>AI-prioritized scheduling</Text>
+        <Text style={styles.headerTitle}>My Appointments</Text>
+        <Text style={styles.headerSub}>Pull down to refresh</Text>
       </View>
 
-      {/* SUCCESS BANNER */}
-      <View style={styles.successBanner}>
-        <Ionicons name="checkmark-circle" size={24} color="#fff" />
-        <View style={{ marginLeft: 10 }}>
-          <Text style={styles.successTitle}>
-            Booking Confirmed Successfully
-          </Text>
-          <Text style={styles.successSub}>
-            Confirmation sent to your registered mobile
-          </Text>
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#0E2A4E"
+          style={{ marginTop: 40 }}
+        />
+      ) : appointments.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Ionicons name="calendar-outline" size={48} color="#9ca3af" />
+          <Text style={styles.emptyText}>No appointments yet</Text>
+          <Text style={styles.emptySub}>Book one via Find Hospitals</Text>
+          <TouchableOpacity
+            style={styles.bookBtn}
+            onPress={() => router.push("/(tabs)/dashboard/find-hospital")}
+          >
+            <Text style={styles.bookBtnText}>Find Hospitals</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        appointments.map((appt) => (
+          <View key={appt.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.hospitalName}>
+                {appt.hospital_name ?? `Hospital #${appt.hospital_id}`}
+              </Text>
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: STATUS_COLOR[appt.status] ?? "#6B7280" },
+                ]}
+              >
+                <Text style={styles.badgeText}>{appt.status}</Text>
+              </View>
+            </View>
 
-      {/* PRIORITY CARD */}
-      <View style={styles.priorityCard}>
-        <Ionicons name="alert-circle" size={40} color="#fff" />
-        <Text style={styles.priorityText}>LOW PRIORITY</Text>
-        <Text style={styles.prioritySub}>
-          Priority assigned using AI severity and workload analysis
-        </Text>
-      </View>
-
-      {/* DETAILS CARD */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Appointment Details</Text>
-
-        <InfoItem
-          icon="location-outline"
-          label="Hospital"
-          value="City General Hospital"
-          sub="Multi-Specialty Center"
-        />
-
-        <InfoItem
-          icon="person-outline"
-          label="Department & Doctor"
-          value="Respiratory Medicine"
-          sub="Dr. Rajesh Kumar • Sr. Consultant"
-        />
-
-        <InfoItem
-          icon="calendar-outline"
-          label="Date & Time"
-          value="18 Mar 2026"
-          sub="10:30 AM - 11:00 AM"
-        />
-
-        <InfoItem
-          icon="time-outline"
-          label="Queue Status"
-          value="Position #8"
-          sub="Est. waiting: 25-30 minutes"
-        />
-      </View>
-
-      {/* BREAKDOWN */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Priority Level Breakdown</Text>
-
-        <Progress label="Symptom Severity" value={40} />
-        <Progress label="Department Load" value={65} />
-        <Progress label="Medical History" value={55} />
-
-        <View style={styles.analysisBox}>
-          <Text>
-            <Text style={{ fontWeight: "bold" }}>AI Analysis: </Text>
-            Based on your symptoms, medical history, and department workload,
-            you’ve been assigned low priority for optimized consultation.
-          </Text>
-        </View>
-      </View>
-
-      {/* BUTTONS */}
-      <TouchableOpacity
-        style={styles.primaryBtn}
-        onPress={() => router.push("/(tabs)/dashboard/health-timeline")}
-      >
-        <Text style={styles.primaryText}>View Health Timeline →</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.secondaryBtn}>
-        <Text style={styles.secondaryText}>Download Appointment</Text>
-      </TouchableOpacity>
+            <InfoRow icon="medkit-outline" text={`Dept: ${appt.department}`} />
+            <InfoRow
+              icon="calendar-outline"
+              text={`Date: ${appt.appointment_date}`}
+            />
+            <InfoRow
+              icon="time-outline"
+              text={`Time: ${appt.appointment_time}`}
+            />
+            {appt.insurance && (
+              <InfoRow
+                icon="shield-checkmark-outline"
+                text={`Insurance: ${appt.insurance}`}
+              />
+            )}
+            {(appt.status === "PENDING" || appt.status === "APPROVED") &&
+              (cancelConfirm === appt.id ? (
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmText}>Confirm cancel?</Text>
+                  <TouchableOpacity
+                    style={styles.confirmYes}
+                    onPress={() => handleCancel(appt.id)}
+                    disabled={cancelling}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                      {cancelling ? "Cancelling…" : "Yes"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.confirmNo}
+                    onPress={() => setCancelConfirm(null)}
+                  >
+                    <Text style={{ color: "#374151" }}>No</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setCancelConfirm(appt.id)}
+                >
+                  <Text style={styles.cancelText}>Cancel Appointment</Text>
+                </TouchableOpacity>
+              ))}
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
 
-/* COMPONENTS */
-
-function InfoItem({ icon, label, value, sub }: any) {
+function InfoRow({ icon, text }: { icon: any; text: string }) {
   return (
     <View style={styles.infoRow}>
-      <Ionicons name={icon} size={22} color="#1E88E5" />
-      <View style={{ marginLeft: 10 }}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>{value}</Text>
-        <Text style={styles.sub}>{sub}</Text>
-      </View>
+      <Ionicons name={icon} size={16} color="#6b7280" />
+      <Text style={styles.infoText}>{text}</Text>
     </View>
   );
 }
 
-function Progress({ label, value }: any) {
-  return (
-    <View style={{ marginTop: 12 }}>
-      <View style={styles.rowBetween}>
-        <Text>{label}</Text>
-        <Text>{value}%</Text>
-      </View>
-
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${value}%` }]} />
-      </View>
-    </View>
-  );
-}
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
-
-  header: {
-    backgroundColor: "#0E2A4E",
-    padding: 20,
-    paddingTop: 50,
-  },
-
+  header: { backgroundColor: "#0E2A4E", padding: 20, paddingTop: 50 },
   headerTitle: {
     color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     marginTop: 10,
   },
-
-  headerSub: { color: "#cbd5e1" },
-
-  successBanner: {
-    flexDirection: "row",
-    backgroundColor: "#16A34A",
-    margin: 16,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-
-  successTitle: { color: "#fff", fontWeight: "bold" },
-  successSub: { color: "#dcfce7", fontSize: 12 },
-
-  priorityCard: {
-    backgroundColor: "#16A34A",
-    margin: 16,
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-
-  priorityText: {
-    color: "#fff",
-    fontSize: 22,
+  headerSub: { color: "#cbd5e1", fontSize: 12 },
+  emptyBox: { alignItems: "center", padding: 40, marginTop: 20 },
+  emptyText: {
+    fontSize: 18,
     fontWeight: "bold",
-    marginTop: 10,
+    color: "#374151",
+    marginTop: 12,
   },
-
-  prioritySub: {
-    color: "#dcfce7",
-    textAlign: "center",
-    marginTop: 5,
+  emptySub: { color: "#6b7280", marginTop: 4 },
+  bookBtn: {
+    backgroundColor: "#0E2A4E",
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
-
+  bookBtnText: { color: "#fff", fontWeight: "bold" },
   card: {
     backgroundColor: "#fff",
     margin: 16,
+    marginBottom: 0,
     padding: 16,
     borderRadius: 16,
     elevation: 3,
   },
-
-  cardTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-
-  label: { color: "#6b7280" },
-  value: { fontWeight: "bold", fontSize: 16 },
-  sub: { color: "#6b7280" },
-
-  progressBar: {
-    height: 8,
-    backgroundColor: "#ddd",
-    borderRadius: 10,
-    marginTop: 5,
-  },
-
-  progressFill: {
-    height: 8,
-    backgroundColor: "#16A34A",
-    borderRadius: 10,
-  },
-
-  rowBetween: {
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
-
-  analysisBox: {
+  hospitalName: { fontWeight: "bold", fontSize: 16, flex: 1, color: "#1f2937" },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  infoRow: { flexDirection: "row", alignItems: "center", marginTop: 6, gap: 6 },
+  infoText: { color: "#4b5563", fontSize: 14 },
+  cancelBtn: {
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: "#86efac",
+    borderColor: "#EF4444",
+    borderRadius: 10,
     padding: 10,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-
-  primaryBtn: {
-    backgroundColor: "#0E2A4E",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
     alignItems: "center",
   },
+  cancelText: { color: "#EF4444", fontWeight: "bold" },
 
-  primaryText: { color: "#fff", fontWeight: "bold" },
-
-  secondaryBtn: {
-    borderWidth: 2,
-    borderColor: "#0E2A4E",
-    marginHorizontal: 16,
-    marginBottom: 30,
-    padding: 16,
-    borderRadius: 12,
+  confirmRow: {
+    flexDirection: "row",
     alignItems: "center",
+    marginTop: 12,
+    gap: 10,
   },
 
-  secondaryText: {
-    color: "#0E2A4E",
-    fontWeight: "bold",
+  confirmText: {
+    flex: 1,
+    color: "#374151",
+    fontWeight: "600",
+  },
+
+  confirmYes: {
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  confirmNo: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
 });

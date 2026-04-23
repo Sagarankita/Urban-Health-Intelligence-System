@@ -1,22 +1,28 @@
+import { useAuth } from "@/context/AuthContext";
+import API from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const insets = useSafeAreaInsets();
   const [selectedRole, setSelectedRole] = useState("Patient");
   const [secure, setSecure] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const roles = [
     { name: "Patient", icon: "person-outline" },
@@ -31,7 +37,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <StatusBar barStyle="light-content" />
 
       {/* HEADER */}
@@ -90,6 +101,10 @@ export default function LoginScreen() {
           placeholder="Enter email or mobile"
           placeholderTextColor="#999"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         {/* PASSWORD */}
@@ -100,6 +115,8 @@ export default function LoginScreen() {
             placeholderTextColor="#999"
             secureTextEntry={secure}
             style={{ flex: 1 }}
+            value={password}
+            onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setSecure(!secure)}>
             <Ionicons
@@ -120,18 +137,41 @@ export default function LoginScreen() {
 
         {/* LOGIN BUTTON */}
         <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={() => {
-            if (selectedRole === "Patient") {
-              router.replace("/(tabs)/dashboard");
-            } else if (selectedRole === "Hospital") {
-              router.replace("/(tabs)/hospital");
-            } else {
-              router.replace("/(tabs)/municipal");
+          style={[styles.loginBtn, loading && { opacity: 0.7 }]}
+          disabled={loading}
+          onPress={async () => {
+            if (!email.trim() || !password.trim()) {
+              alert("Please enter your email and password");
+              return;
+            }
+            try {
+              setLoading(true);
+              const res = await API.post("/api/auth/login", {
+                email: email.trim(),
+                password,
+                role: selectedRole.toUpperCase(),
+              });
+              login(res.data.user);
+              if (selectedRole === "Patient") {
+                router.replace("/(tabs)/dashboard");
+              } else if (selectedRole === "Hospital") {
+                router.replace("/(tabs)/hospital");
+              } else {
+                router.replace("/(tabs)/municipal");
+              }
+            } catch (err: any) {
+              const msg =
+                err?.response?.data?.error ||
+                "Login failed. Check your credentials.";
+              alert(msg);
+            } finally {
+              setLoading(false);
             }
           }}
         >
-          <Text style={styles.loginText}>Login as {selectedRole}</Text>
+          <Text style={styles.loginText}>
+            {loading ? "Logging in..." : `Login as ${selectedRole}`}
+          </Text>
         </TouchableOpacity>
 
         {/* SIGNUP */}

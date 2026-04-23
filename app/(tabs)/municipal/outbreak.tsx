@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import API from "../../../services/api";
 
@@ -57,7 +57,12 @@ export default function OutbreakScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <Text>Loading outbreak data...</Text>
       </View>
     );
@@ -65,7 +70,12 @@ export default function OutbreakScreen() {
 
   if (error && !data) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <Text style={{ color: "red", marginBottom: 10 }}>Error: {error}</Text>
         <Text>Using offline data...</Text>
       </View>
@@ -74,13 +84,20 @@ export default function OutbreakScreen() {
 
   if (!data) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <Text>Failed to load data</Text>
       </View>
     );
   }
 
-  const wards = Array.isArray((data as any)?.all_wards) ? (data as any).all_wards : [];
+  const wards = Array.isArray((data as any)?.all_wards)
+    ? (data as any).all_wards
+    : [];
   const zoneSummary = (data as any)?.zone_summary || {};
   const topHotspots = Array.isArray((data as any)?.top_hotspots)
     ? (data as any).top_hotspots
@@ -90,12 +107,12 @@ export default function OutbreakScreen() {
 
   // Calculate summary stats (defensive: avoids crashes on unexpected API shape)
   const totalAlerts = wards.filter(
-    (w: any) => w?.zone === "RED" || w?.zone === "YELLOW"
+    (w: any) => w?.zone === "RED" || w?.zone === "YELLOW",
   ).length;
   const criticalAlerts = zoneSummary.RED?.length || 0;
   const affectedCases = wards.reduce(
     (sum: number, ward: any) => sum + (ward?.actual || 0),
-    0
+    0,
   );
 
   return (
@@ -103,7 +120,7 @@ export default function OutbreakScreen() {
       {/* HEADER */}
       <TouchableOpacity
         style={styles.header}
-        onPress={() => router.replace("/municipal")}
+        onPress={() => router.replace("/(tabs)/municipal")}
       >
         <Ionicons name="chevron-back" size={24} />
         <View>
@@ -136,9 +153,15 @@ export default function OutbreakScreen() {
               : "Stable"
           }
           level={
-            ward?.zone === "RED" ? "CRITICAL" : ward?.zone === "YELLOW" ? "HIGH" : "MEDIUM"
+            ward?.zone === "RED"
+              ? "CRITICAL"
+              : ward?.zone === "YELLOW"
+                ? "HIGH"
+                : "MEDIUM"
           }
           symptoms={wardSymptomsMap[ward.ward] || []}
+          onInvestigate={() => router.push("/(tabs)/municipal/heatmap")}
+          onSendAlert={() => router.push("/(tabs)/municipal/advisory")}
         />
       ))}
 
@@ -157,9 +180,11 @@ export default function OutbreakScreen() {
         <Text style={styles.sectionTitle}>Recommended Actions</Text>
 
         {topHotspots.length > 0 &&
-          (topHotspots[0]?.advisories || []).slice(0, 3).map((action: string, index: number) => (
-          <Action key={index} text={action} />
-          ))}
+          (topHotspots[0]?.advisories || [])
+            .slice(0, 3)
+            .map((action: string, index: number) => (
+              <Action key={index} text={action} />
+            ))}
       </View>
     </ScrollView>
   );
@@ -172,7 +197,16 @@ function Summary({ number, label }: any) {
     </View>
   );
 }
-function OutbreakCard({ title, ward, cases, growth, level, symptoms }: any) {
+function OutbreakCard({
+  title,
+  ward,
+  cases,
+  growth,
+  level,
+  symptoms,
+  onInvestigate,
+  onSendAlert,
+}: any) {
   const color =
     level === "CRITICAL" ? "#EF4444" : level === "HIGH" ? "#F97316" : "#EAB308";
 
@@ -218,11 +252,11 @@ function OutbreakCard({ title, ward, cases, growth, level, symptoms }: any) {
 
       {/* Buttons */}
       <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.btnDark}>
+        <TouchableOpacity style={styles.btnDark} onPress={onInvestigate}>
           <Text style={{ color: "#fff" }}>Investigate</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnBlue}>
+        <TouchableOpacity style={styles.btnBlue} onPress={onSendAlert}>
           <Text style={{ color: "#fff" }}>Send Alert</Text>
         </TouchableOpacity>
       </View>
