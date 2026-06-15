@@ -1,7 +1,9 @@
+import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -12,6 +14,7 @@ import {
 
 export default function ReportSymptoms() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const symptoms = [
     "Fever",
@@ -31,6 +34,8 @@ export default function ReportSymptoms() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [duration, setDuration] = useState("");
   const [severity, setSeverity] = useState(50);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   const toggleSymptom = (symptom: string) => {
     if (selectedSymptoms.includes(symptom)) {
@@ -39,6 +44,50 @@ export default function ReportSymptoms() {
       setSelectedSymptoms([...selectedSymptoms, symptom]);
     }
   };
+
+  const getRiskCardStyles = (risk: string) => {
+    switch (risk?.toUpperCase()) {
+      case "LOW":
+        return { backgroundColor: "#D1FAE5", borderLeftColor: "#10B981", textColor: "#047857" };
+      case "MEDIUM":
+        return { backgroundColor: "#FEF3C7", borderLeftColor: "#F59E0B", textColor: "#92400E" };
+      case "HIGH":
+        return { backgroundColor: "#FED7AA", borderLeftColor: "#F97316", textColor: "#9A3412" };
+      case "CRITICAL":
+        return { backgroundColor: "#FEE2E2", borderLeftColor: "#EF4444", textColor: "#991B1B" };
+      default:
+        return { backgroundColor: "#F3F4F6", borderLeftColor: "#9CA3AF", textColor: "#374151" };
+    }
+  };
+
+  const handleAnalyze = async () => {
+  if (selectedSymptoms.length === 0 || !duration) {
+    alert("Please select symptoms and duration");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const res = await API.post("/api/analyze", {
+      symptoms: selectedSymptoms,
+      duration,
+      severity,
+      patient_name: user?.name || "Anonymous Patient",
+      ward: user?.ward || "Unknown",
+    });
+    console.log("FRONTEND RESPONSE:", res.data);
+    setResult(res.data);
+    router.push({
+      pathname: "/dashboard",
+      params: {},
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ScrollView style={styles.container}>
@@ -59,7 +108,7 @@ export default function ReportSymptoms() {
 
       <View style={styles.locationRow}>
         <Ionicons name="location-outline" size={18} color="#1E88E5" />
-        <Text style={styles.locationText}>Location: Ward 23, Pune</Text>
+        <Text style={styles.locationText}>Location: {user?.ward || "Not set"}</Text>
       </View>
 
       {/* SYMPTOMS CARD */}
@@ -140,10 +189,19 @@ export default function ReportSymptoms() {
 
       {/* ANALYZE BUTTON */}
 
-      <TouchableOpacity style={styles.analyzeBtn}>
+      <TouchableOpacity style={styles.analyzeBtn} onPress={handleAnalyze}>
         <Ionicons name="sparkles-outline" size={20} color="#6b7280" />
-        <Text style={styles.analyzeText}>Analyze with AI</Text>
+        <Text style={styles.analyzeText}>{loading ? "Analyzing..." : "Analyze with AI"}</Text>
       </TouchableOpacity>
+      {/* RESULT */}
+{result && result.risk && (
+  <View style={[styles.card, { backgroundColor: getRiskCardStyles(result.risk).backgroundColor, borderLeftWidth: 4, borderLeftColor: getRiskCardStyles(result.risk).borderLeftColor }]}>
+    <Text style={[styles.cardTitle, { color: getRiskCardStyles(result.risk).textColor }]}>Result</Text>
+    <Text style={{ color: getRiskCardStyles(result.risk).textColor, fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Risk: {result.risk}</Text>
+    <Text style={{ color: getRiskCardStyles(result.risk).textColor }}>Advice: {result.recommendation}</Text>
+  </View>
+)}
+
     </ScrollView>
   );
 }

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
 import { useState } from "react";
 import {
   View,
@@ -8,13 +9,51 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import API from "../services/api";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleReset = async () => {
+    if (!email || !phone || !newPassword) {
+      Alert.alert("Missing Fields", "Please fill all required fields");
+      return;
+    }
+    if (newPassword.length < 8) {
+      Alert.alert("Weak Password", "Password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Mismatch", "Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    try {
+      await API.post("/api/auth/forgot-password", {
+        email,
+        phone,
+        new_password: newPassword,
+      });
+      Alert.alert("Success", "Password reset successfully! Please login with your new password.", [
+        { text: "OK", onPress: () => router.replace("/login") },
+      ]);
+    } catch (e: any) {
+      Alert.alert("Error", e?.response?.data?.error || "Password reset failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -39,8 +78,8 @@ export default function ForgotPasswordScreen() {
       {/* FORM */}
       <View style={styles.form}>
         {/* USERNAME */}
-        <Text style={styles.label}>Username *</Text>
-        <TextInput style={styles.input} placeholder="Enter your username" />
+        <Text style={styles.label}>Email *</Text>
+        <TextInput style={styles.input} placeholder="Enter your email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
         {/* DOB */}
         <Text style={styles.label}>Date of Birth *</Text>
@@ -58,6 +97,8 @@ export default function ForgotPasswordScreen() {
           style={styles.input}
           placeholder="Enter your mobile number"
           keyboardType="numeric"
+          value={phone}
+          onChangeText={setPhone}
         />
         <Text style={styles.helper}>10-digit mobile number</Text>
 
@@ -68,6 +109,8 @@ export default function ForgotPasswordScreen() {
             style={{ flex: 1 }}
             placeholder="Create a new password"
             secureTextEntry={!showPass}
+            value={newPassword}
+            onChangeText={setNewPassword}
           />
           <TouchableOpacity onPress={() => setShowPass(!showPass)}>
             <Ionicons
@@ -86,6 +129,8 @@ export default function ForgotPasswordScreen() {
             style={{ flex: 1 }}
             placeholder="Re-enter your new password"
             secureTextEntry={!showConfirm}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
           />
           <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
             <Ionicons
@@ -107,10 +152,14 @@ export default function ForgotPasswordScreen() {
         </View>
 
         {/* BUTTON */}
-        <TouchableOpacity style={styles.resetBtn}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            Reset Password
-          </Text>
+        <TouchableOpacity style={[styles.resetBtn, !loading && { backgroundColor: '#0E2A4E' }]} onPress={handleReset} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              Reset Password
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* BACK TO LOGIN */}

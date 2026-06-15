@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
 import { useState } from "react";
 import {
   View,
@@ -8,11 +9,16 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import { useAuth } from "../../services/AuthContext";
 
 export default function PatientRegister() {
   const router = useRouter();
+  const { register } = useAuth();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -161,15 +167,53 @@ export default function PatientRegister() {
 
       {/* BUTTON */}
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          if (step === 1) setStep(2);
-          else alert("Account Created Successfully!");
+        style={[styles.button, loading && { opacity: 0.7 }]}
+        disabled={loading}
+        onPress={async () => {
+          if (step === 1) {
+            if (!form.name || !form.age || !form.phone || !form.email || !form.ward) {
+              Alert.alert("Missing Fields", "Please fill all required fields");
+              return;
+            }
+            setStep(2);
+          } else {
+            if (!form.password || form.password.length < 6) {
+              Alert.alert("Weak Password", "Password must be at least 6 characters");
+              return;
+            }
+            if (form.password !== form.confirm) {
+              Alert.alert("Mismatch", "Passwords do not match");
+              return;
+            }
+            setLoading(true);
+            const result = await register({
+              name: form.name,
+              email: form.email,
+              phone: form.phone,
+              password: form.password,
+              role: "patient",
+              age: form.age,
+              gender: form.gender,
+              ward: form.ward,
+            });
+            setLoading(false);
+            if (result.success) {
+              Alert.alert("Success", "Account Created Successfully!", [
+                { text: "OK", onPress: () => router.replace("/(tabs)/dashboard") },
+              ]);
+            } else {
+              Alert.alert("Error", result.error || "Registration failed");
+            }
+          }
         }}
       >
-        <Text style={styles.buttonText}>
-          {step === 1 ? "Review Details" : "Create Account"}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>
+            {step === 1 ? "Review Details" : "Create Account"}
+          </Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );

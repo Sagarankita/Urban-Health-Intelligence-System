@@ -1,16 +1,21 @@
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#0A1F44",
+      }}
+    >
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home-outline" size={22} color={color} />
           ),
         }}
       />
@@ -18,19 +23,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="hospital"
         options={{
-          title: "Hospitals",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="business-outline" size={size} color={color} />
+          title: "Hospital",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="medkit-outline" size={22} color={color} />
           ),
         }}
       />
 
       <Tabs.Screen
-        name="appointments"
+        name="municipal"
         options={{
-          title: "Appointments",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+          title: "Municipal",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="business-outline" size={22} color={color} />
           ),
         }}
       />
@@ -39,12 +44,18 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={22} color={color} />
           ),
         }}
       />
 
+      <Tabs.Screen
+        name="appointments"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

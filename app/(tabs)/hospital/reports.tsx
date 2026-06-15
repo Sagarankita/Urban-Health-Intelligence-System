@@ -1,6 +1,11 @@
-import { router } from "@/.expo/types/router";
+import API from "@/services/api";
+import { useAuth } from "@/services/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,6 +14,69 @@ import {
 } from "react-native";
 
 export default function ReportsScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const HOSPITAL_ID = user?.hospital_id || 1;
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  const fetchReports = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/api/reports", {
+        params: { hospital_id: HOSPITAL_ID },
+      });
+      setReports(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch reports:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [HOSPITAL_ID]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchReports();
+    }, [fetchReports])
+  );
+
+  const handleMarkCritical = async (id: number) => {
+    try {
+      setActionLoading(id);
+      await API.patch(`/api/reports/${id}/critical`, { is_critical: true });
+      await fetchReports();
+    } catch (err) {
+      console.error("Failed to mark critical:", err);
+      Alert.alert("Error", "Could not mark report as critical");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRecommendVisit = async (id: number) => {
+    try {
+      setActionLoading(id);
+      await API.patch(`/api/reports/${id}/status`, { status: "ACKNOWLEDGED" });
+      await fetchReports();
+      Alert.alert("Done", "Patient has been recommended for a visit");
+    } catch (err) {
+      console.error("Failed to update report:", err);
+      Alert.alert("Error", "Could not update report");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const getTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins} mins ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    return `${Math.floor(hours / 24)} days ago`;
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -24,68 +92,77 @@ export default function ReportsScreen() {
         </View>
       </View>
 
-      {/* REPORTS */}
-      <ReportCard
-        name="Vikram Singh"
-        ward="Ward 23, Pune"
-        symptoms={["Fever", "Cough", "Fatigue"]}
-        score={72}
-        level="High"
-        time="2 hours ago"
-        isNew
-      />
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#1E88E5"
+          style={{ marginTop: 40 }}
+        />
+      ) : reports.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Ionicons name="document-outline" size={40} color="#9ca3af" />
+          <Text style={{ color: "#6b7280", marginTop: 10, fontSize: 16 }}>
+            No patient reports yet
+          </Text>
+        </View>
+      ) : (
+        reports.map((report) => {
+          const symptoms = Array.isArray(report.symptoms)
+            ? report.symptoms
+            : (() => {
+                try {
+                  return JSON.parse(report.symptoms);
+                } catch {
+                  return [];
+                }
+              })();
+          const isNew = report.status === "NEW";
 
-      <ReportCard
-        name="Meera Patel"
-        ward="Ward 15, Pune"
-        symptoms={["Headache", "Body Ache"]}
-        score={45}
-        level="Moderate"
-        time="3 hours ago"
-        isNew
-      />
-
-      <ReportCard
-        name="Arjun Reddy"
-        ward="Ward 8, Pune"
-        symptoms={["Nausea", "Dizziness"]}
-        score={28}
-        level="Low"
-        time="5 hours ago"
-      />
-
-      <ReportCard
-        name="Priya Sharma"
-        ward="Ward 10, Pune"
-        symptoms={["Chest Pain", "Shortness of Breath"]}
-        score={85}
-        level="High"
-        time="30 mins ago"
-        isNew
-      />
-
-      <ReportCard
-        name="Rohit Kumar"
-        ward="Ward 5, Pune"
-        symptoms={["Sore Throat", "Runny Nose"]}
-        score={22}
-        level="Low"
-        time="6 hours ago"
-      />
+          return (
+            <ReportCard
+              key={report.id}
+              name={report.patient_name || "Unknown Patient"}
+              ward={report.ward || "Unknown Ward"}
+              symptoms={symptoms}
+              score={report.severity}
+              level={report.risk}
+              time={getTimeAgo(report.created_at)}
+              isNew={isNew}
+              isCritical={report.is_critical}
+              loading={actionLoading === report.id}
+              onMarkCritical={() => handleMarkCritical(report.id)}
+              onRecommendVisit={() => handleRecommendVisit(report.id)}
+            />
+          );
+        })
+      )}
 
       {/* INFO */}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>
-          Auto-refresh: This screen updates automatically when new reports are
-          submitted.
+          Auto-refresh: Pull down to refresh or re-enter this screen for latest
+          reports.
         </Text>
       </View>
     </ScrollView>
   );
 }
-function ReportCard({ name, ward, symptoms, score, level, time, isNew }: any) {
+
+function ReportCard({
+  name,
+  ward,
+  symptoms,
+  score,
+  level,
+  time,
+  isNew,
+  isCritical,
+  loading,
+  onMarkCritical,
+  onRecommendVisit,
+}: any) {
   const getColor = () => {
-    if (level === "High") return "#EF4444";
+    if (level === "Severe" || level === "High") return "#EF4444";
     if (level === "Moderate") return "#F97316";
     return "#22C55E";
   };
@@ -93,7 +170,7 @@ function ReportCard({ name, ward, symptoms, score, level, time, isNew }: any) {
   const color = getColor();
 
   return (
-    <View style={[styles.card, isNew && styles.newCard]}>
+    <View style={[styles.card, isNew && styles.newCard, isCritical && styles.criticalCard]}>
       {/* HEADER */}
       <View style={styles.rowBetween}>
         <View>
@@ -101,11 +178,18 @@ function ReportCard({ name, ward, symptoms, score, level, time, isNew }: any) {
           <Text style={styles.ward}>{ward}</Text>
         </View>
 
-        {isNew && (
-          <View style={styles.newBadge}>
-            <Text style={{ color: "#fff" }}>NEW</Text>
-          </View>
-        )}
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          {isCritical && (
+            <View style={styles.criticalBadge}>
+              <Text style={{ color: "#fff", fontSize: 11 }}>CRITICAL</Text>
+            </View>
+          )}
+          {isNew && (
+            <View style={styles.newBadge}>
+              <Text style={{ color: "#fff" }}>NEW</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* SYMPTOMS */}
@@ -133,17 +217,30 @@ function ReportCard({ name, ward, symptoms, score, level, time, isNew }: any) {
 
       {/* BUTTONS */}
       <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.btnRed}>
-          <Text style={{ color: "#fff" }}>Mark Critical</Text>
+        <TouchableOpacity
+          style={[styles.btnRed, isCritical && { opacity: 0.5 }]}
+          onPress={onMarkCritical}
+          disabled={isCritical || loading}
+        >
+          <Text style={{ color: "#fff" }}>
+            {loading ? "..." : isCritical ? "Marked Critical" : "Mark Critical"}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnDark}>
-          <Text style={{ color: "#fff" }}>Recommend Visit</Text>
+        <TouchableOpacity
+          style={styles.btnDark}
+          onPress={onRecommendVisit}
+          disabled={loading}
+        >
+          <Text style={{ color: "#fff" }}>
+            {loading ? "..." : "Recommend Visit"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6", padding: 16 },
 
@@ -164,6 +261,18 @@ const styles = StyleSheet.create({
     borderColor: "#0EA5E9",
   },
 
+  criticalCard: {
+    borderWidth: 2,
+    borderColor: "#EF4444",
+  },
+
+  emptyCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    marginTop: 20,
+  },
+
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -175,6 +284,13 @@ const styles = StyleSheet.create({
 
   newBadge: {
     backgroundColor: "#0EA5E9",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+
+  criticalBadge: {
+    backgroundColor: "#EF4444",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,

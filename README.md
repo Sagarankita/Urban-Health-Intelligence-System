@@ -1,50 +1,141 @@
-# Welcome to your Expo app 👋
+# Urban Health Intelligence System
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo (React Native) mobile app + Express backend + PostgreSQL + Python analytics pipeline (`backend/models/untitled10.py`).
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- **Node.js** (recommended: 18+)
+- **PostgreSQL** (14+)
+- **Python** (3.10+) with the Windows `py` launcher available (`py --version`)
+- Android emulator or a physical device with Expo Go
 
-   ```bash
-   npm install
-   ```
+## Repo structure
 
-2. Start the app
+- `app/`: Expo Router app (mobile UI)
+- `services/api.js`: Axios client used by the app
+- `backend/`: Express + Postgres backend
+- `backend/migrations/`: SQL schema
+- `backend/seed/`: SQL seed data
+- `backend/models/untitled10.py`: pipeline used by `/api/outbreaks/heatmap`
 
-   ```bash
-   npx expo start
-   ```
+## Environment variables
 
-In the output, you'll find options to open the app in a
+### Mobile app (`.env` at repo root)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Create/verify:
 
 ```bash
-npm run reset-project
+EXPO_PUBLIC_API_URL="http://<YOUR_LAN_IP>:5000"
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Android Emulator**: set to `http://10.0.2.2:5000`
+- **Physical device**: set to your PC’s LAN IP (example: `http://192.168.0.114:5000`)
 
-## Learn more
+### Backend (`backend/.env`)
 
-To learn more about developing your project with Expo, look at the following resources:
+Create/verify:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=healthsys
+DB_USER=postgres
+DB_PASSWORD=your_password
+```
 
-## Join the community
+Notes:
+- If you created the DB as `healthSys` with quotes, use that exact case; otherwise Postgres DB names are typically lowercase.
+- `DB_PASSWORD` is trimmed in code, so accidental leading spaces won’t break auth.
 
-Join our community of developers creating universal apps.
+## Setup
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 1) Install dependencies
+
+From repo root:
+
+```bash
+npm install
+```
+
+Backend deps:
+
+```bash
+cd backend
+npm install
+```
+
+Python deps:
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+### 2) Create the database
+
+Create a Postgres DB named `healthsys` (or your chosen name in `backend/.env`).
+
+### 3) Run migrations + seed data
+
+From `backend/`:
+
+```bash
+npm run db:init
+```
+
+This will:
+- apply SQL migrations
+- seed hospitals/resources
+- seed ward/city lists (Maharashtra)
+- seed `ward_data` and `reports` used by the `untitled10` pipeline
+
+### 4) Start the backend
+
+From `backend/`:
+
+```bash
+npm run dev
+```
+
+Backend listens on `http://0.0.0.0:5000`.
+
+### 5) Start the Expo app
+
+From repo root:
+
+```bash
+npx expo start -c
+```
+
+## Key API endpoints
+
+- **Outbreak/heatmap (runs Python + returns JSON)**: `GET /api/outbreaks/heatmap`
+- **Force refresh** (recompute + persist snapshot): `POST /api/outbreaks/refresh`
+- **Advisories**
+  - list: `GET /api/advisories?city_id=...` or `GET /api/advisories?ward_id=...`
+  - create: `POST /api/advisories`
+  - delete: `DELETE /api/advisories/:id`
+- **Geo dropdown data**
+  - cities (Maharashtra): `GET /api/geo/cities?state=Maharashtra`
+  - wards for a city: `GET /api/geo/cities/:cityId/wards`
+
+## Common troubleshooting
+
+### Axios “Network Error” in the app
+
+- Ensure backend is reachable from the device:
+  - Emulator: use `EXPO_PUBLIC_API_URL="http://10.0.2.2:5000"`
+  - Physical device: use your PC LAN IP and allow port **5000** in Windows Firewall
+- Restart Metro after changing `.env`:
+
+```bash
+npx expo start -c
+```
+
+### “Port 8081/8083 already in use”
+
+Kill the existing Expo/Metro process, or start on a new port:
+
+```bash
+npx expo start --port 8084
+```
+
